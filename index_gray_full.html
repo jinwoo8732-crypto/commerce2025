@@ -1,0 +1,149 @@
+"""<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>프로파일커머스 자동견적기</title>
+<style>
+@font-face {
+  font-family: 'Pretendard';
+  src: url('fonts/Pretendard-Regular.woff2') format('woff2');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Pretendard';
+  src: url('fonts/Pretendard-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+}
+@font-face {
+  font-family: 'Pretendard';
+  src: url('fonts/Pretendard-Bold.woff2') format('woff2');
+  font-weight: 700;
+}
+body {
+  font-family: 'Pretendard','Noto Sans KR',sans-serif;
+  background:#f8f9fb;
+  padding:40px;
+  color:#222;
+}
+.container {
+  max-width:950px;
+  background:#fff;
+  border-radius:20px;
+  padding:36px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.08);
+  margin:auto;
+}
+select,input {
+  width:100%;
+  padding:12px;
+  border:1px solid #ccc;
+  border-radius:10px;
+  font-size:1rem;
+}
+button {
+  cursor:pointer;
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <h2 style="text-align:center;font-size:2rem;font-weight:700;">프로파일커머스 자동견적기</h2>
+  <p style="text-align:center;color:#666;">규격과 색상 선택 시 이미지가 자동으로 변경됩니다 🎨</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div><label>규격 선택</label>
+      <select id="size" onchange="updateImage();updatePrice();">
+        <option value="2020">2020</option>
+        <option value="2040">2040</option>
+        <option value="3030">3030</option>
+        <option value="3060">3060</option>
+        <option value="4040">4040</option>
+        <option value="4080">4080</option>
+      </select></div>
+    <div><label>색상 선택</label>
+      <select id="color" onchange="updateImage();updatePrice();">
+        <option value="silver">실버</option>
+        <option value="black">블랙</option>
+      </select></div>
+  </div>
+
+  <div id="profileImageBox" style="text-align:center;margin:25px 0;">
+    <img id="profileImage" src="images/2020-silver.png" style="max-width:400px;width:100%;border-radius:10px;">
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div><label>수량</label><input type="number" id="quantity" value="1" onchange="updatePrice()"></div>
+    <div><label>길이 (mm)</label><input type="number" id="length" value="100" onchange="updatePrice()"></div>
+  </div>
+
+  <div style="margin-top:25px;">
+    <label>가공 선택</label>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;">
+      <label><input type="checkbox" name="process" value="tap" onchange="updateProcessImage();updatePrice()"> 탭 (+300원)</label>
+      <label><input type="checkbox" name="process" value="hole" onchange="updateProcessImage();updatePrice()"> 홀 (+400원)</label>
+      <label><input type="checkbox" name="process" value="counterbore" onchange="updateProcessImage();updatePrice()"> 카운터보어 (+1000원)</label>
+    </div>
+  </div>
+
+  <div id="processImageBox" style="text-align:center;margin:20px 0;">
+    <img id="processImage" src="images/tap.png" style="max-width:250px;border-radius:10px;">
+  </div>
+
+  <label>가공 수량</label>
+  <input type="number" id="processQty" value="0" onchange="updatePrice()">
+
+  <div id="result" style="text-align:center;margin-top:25px;font-weight:700;font-size:1.3rem;">총 견적가: 0원</div>
+
+  <button onclick="addToCart()" style="margin-top:20px;width:100%;background:#2d3436;color:white;padding:14px;border:none;border-radius:12px;font-size:1.05rem;">🧾 장바구니에 담기</button>
+
+  <hr style="margin:30px 0;border:none;border-top:1px solid #ddd;">
+
+  <h3>🛒 장바구니</h3>
+  <table id="cartTable" style="width:100%;border-collapse:collapse;margin-top:10px;">
+    <thead>
+      <tr style="background:#f1f2f6;">
+        <th>선택</th><th>규격</th><th>색상</th><th>길이</th><th>수량</th><th>가공</th><th>금액</th><th>삭제</th>
+      </tr>
+    </thead>
+    <tbody id="cartBody"></tbody>
+  </table>
+
+  <div style="margin-top:15px;text-align:right;">
+    <button onclick="deleteSelected()" style="background:#636e72;color:white;padding:8px 14px;border:none;border-radius:8px;">선택삭제</button>
+    <button onclick="clearCart()" style="background:#d63031;color:white;padding:8px 14px;border:none;border-radius:8px;">전체삭제</button>
+  </div>
+
+  <hr style="margin:30px 0;border:none;border-top:1px solid #ddd;">
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <button onclick="savePDF()" style="background:#2c3e50;color:white;padding:14px;border:none;border-radius:12px;">📄 PDF 저장</button>
+    <button onclick="sendEmail()" style="background:#1abc9c;color:white;padding:14px;border:none;border-radius:12px;">✉️ 메일 전송</button>
+  </div>
+
+  <div style="margin-top:20px;">
+    <label>이메일 입력</label>
+    <input type="email" id="emailTo" placeholder="예: example@naver.com">
+    <div id="mailResult" style="text-align:center;margin-top:10px;color:#444;"></div>
+  </div>
+</div>
+
+<script>
+(function(){emailjs.init("publicKey_nL-iov_IIpUepMsqE");})();
+const prices={2020:{silver:390,black:600},2040:{silver:690,black:900},3030:{silver:890,black:1100},3060:{silver:1400,black:1800},4040:{silver:1500,black:1900},4080:{silver:2700,black:3000}};
+const processCost={tap:300,hole:400,counterbore:1000};
+function updateImage(){const s=size.value,c=color.value;document.getElementById("profileImage").src=`images/${s}-${c}.png`;}
+function updateProcessImage(){const checked=[...document.querySelectorAll('input[name="process"]:checked')].map(e=>e.value);document.getElementById("processImage").src=checked.length?`images/${checked.at(-1)}.png`:"";}
+function updatePrice(){const s=size.value,c=color.value,l=+length.value||0,q=+quantity.value||1,pq=+processQty.value||0,sel=[...document.querySelectorAll('input[name="process"]:checked')].map(e=>e.value);const base=prices[s][c]*Math.ceil(l/100)*q;const extra=sel.reduce((a,v)=>a+processCost[v]*pq,0);const total=base+extra;result.textContent=`총 견적가: ${total.toLocaleString()}원 (부가세 포함)`;return total;}
+function addToCart(){const s=size.value,c=color.value,l=length.value,q=quantity.value,p=[...document.querySelectorAll('input[name="process"]:checked')].map(e=>e.value),t=updatePrice();const tr=document.createElement("tr");tr.innerHTML=`<td><input type='checkbox'></td><td>${s}</td><td>${c}</td><td>${l}</td><td>${q}</td><td>${p.join(", ")||"-"}</td><td>${t.toLocaleString()}원</td><td><button onclick='this.closest("tr").remove()' style='background:#e74c3c;color:white;border:none;border-radius:6px;padding:3px 8px;'>X</button></td>`;cartBody.appendChild(tr);}
+function deleteSelected(){[...cartBody.querySelectorAll("input[type=checkbox]:checked")].forEach(e=>e.closest("tr").remove());}
+function clearCart(){cartBody.innerHTML="";}
+function savePDF(){const {jsPDF}=window.jspdf;const pdf=new jsPDF();pdf.text("프로파일커머스 견적서",20,20);let y=40;pdf.text("규격 | 색상 | 길이 | 수량 | 가공 | 금액",20,30);[...cartBody.rows].forEach(r=>{const d=[...r.cells].slice(1,7).map(c=>c.textContent);pdf.text(d.join(" | "),20,y);y+=8;});pdf.save("견적서.pdf");}
+function sendEmail(){const emailTo=document.getElementById("emailTo").value.trim();if(!emailTo)return mailResult.textContent="⚠️ 이메일 주소를 입력하세요.";let message="[프로파일커머스 견적서]\\n";[...cartBody.rows].forEach(r=>{const d=[...r.cells].slice(1,7).map(c=>c.textContent);message+=d.join(" | ")+"\\n";});emailjs.send("service_vk0adeb","template_5xcl09a",{to_email:emailTo,from_name:"프로파일커머스 자동견적기",message}).then(()=>mailResult.textContent="✅ 메일이 성공적으로 전송되었습니다.").catch(()=>mailResult.textContent="❌ 메일 전송 오류가 발생했습니다.");}
+updateImage();updatePrice();
+</script>
+</body>
+</html>"""
+
+open("autoquote_localfont/index_gray_full.html", "w", encoding="utf-8").write(html_code)
