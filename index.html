@@ -1,15 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>프로파일 자동견적기</title>
+
+<style>
+body {
+  font-family: Pretendard, sans-serif;
+  background:#f5f6fa;
+  padding:40px;
+}
+.container {
+  max-width:1100px;
+  margin:auto;
+  background:white;
+  padding:30px;
+  border-radius:15px;
+  box-shadow:0 5px 20px rgba(0,0,0,0.08);
+}
+h2 { margin-bottom:20px; }
+.lineItem {
+  border:1px solid #ddd;
+  border-radius:10px;
+  padding:15px;
+  margin-bottom:15px;
+}
+select,input {
+  padding:8px;
+  border:1px solid #ccc;
+  border-radius:6px;
+}
+button {
+  cursor:pointer;
+}
+.totalBox {
+  font-size:1.5rem;
+  font-weight:700;
+  text-align:right;
+  margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h2>프로파일 자동견적기</h2>
+
+<div id="productLines"></div>
+
+<button onclick="addLine()" style="background:#3498db;color:white;padding:8px 14px;border:none;border-radius:6px;">
++ 라인 추가
+</button>
+
+<div class="totalBox">
+총 합계: <span id="grandTotal">0</span> 원
+</div>
+
+</div>
+
+<script>
+
+// 🔥 M 기준 단가 (부가세 포함)
+const prices = {
+  2020: { silver: 3900, black: 6000 },
+  2040: { silver: 6900, black: 9000 },
+  3030: { silver: 8900, black: 11000 },
+  3060: { silver: 14000, black: 18000 },
+  4040: { silver: 16000, black: 19000 },
+  4080: { silver: 28000, black: 30000 }
+};
+
 function addLine() {
 
   const line = document.createElement("div");
   line.className = "lineItem";
-  line.style.marginBottom = "20px";
-  line.style.padding = "15px";
-  line.style.border = "1px solid #ddd";
-  line.style.borderRadius = "10px";
 
   line.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:10px;align-items:center;margin-bottom:10px;">
-
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;align-items:center;">
       <select class="lineSize">
         <option value="2020">2020</option>
         <option value="2040">2040</option>
@@ -24,35 +92,38 @@ function addLine() {
         <option value="black">블랙</option>
       </select>
 
-      <input type="number" class="lineQty" value="1" min="1" placeholder="수량">
+      <!-- 수량 먼저 -->
+      <input type="number" class="lineQty" value="1" min="1">
 
-      <input type="number" class="lineLength" value="100" min="50" max="3000" placeholder="길이(mm)">
+      <!-- 길이 -->
+      <input type="number" class="lineLength" value="100" min="50" max="3000">
 
-      <div class="lineTotal" style="font-weight:700;text-align:right;">
-        0원
-      </div>
-
+      <!-- 라인 금액 -->
+      <div class="lineTotal" style="font-weight:700;text-align:right;">0원</div>
     </div>
 
-    <!-- 🔥 라인별 가공 옵션 -->
-    <div style="display:flex;gap:15px;flex-wrap:wrap;margin-top:8px;align-items:center;">
-
-      <label>
-        <input type="checkbox" class="tapCheck"> 탭
-      </label>
+    <!-- 가공 옵션 -->
+    <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:center;">
+      <label><input type="checkbox" class="tapCheck"> 탭</label>
       <input type="number" class="tapQty" value="0" min="0" style="width:70px;">
 
-      <label>
-        <input type="checkbox" class="holeCheck"> 홀
-      </label>
+      <label><input type="checkbox" class="holeCheck"> 홀</label>
       <input type="number" class="holeQty" value="0" min="0" style="width:70px;">
 
-      <label>
-        <input type="checkbox" class="counterCheck"> 카운터보어
-      </label>
+      <label><input type="checkbox" class="counterCheck"> 카운터보어</label>
       <input type="number" class="counterQty" value="0" min="0" style="width:70px;">
 
-      <button onclick="this.closest('.lineItem').remove(); function calculateAllLines() {
+      <button onclick="this.closest('.lineItem').remove(); calculateAllLines();"
+              style="background:#e74c3c;color:white;border:none;border-radius:6px;padding:4px 10px;">
+        삭제
+      </button>
+    </div>
+  `;
+
+  document.getElementById("productLines").appendChild(line);
+}
+
+function calculateAllLines() {
 
   let grandTotal = 0;
 
@@ -77,22 +148,18 @@ function addLine() {
     const baseUnit = prices[size][color];
     const meterPrice = (length / 1000) * baseUnit;
     const rounded = Math.round(meterPrice / 100) * 100;
+
     let lineTotal = rounded * qty;
 
-    // 🔥 가공비 계산 (라인별)
-    if (line.querySelector(".tapCheck").checked) {
+    if (line.querySelector(".tapCheck").checked)
       lineTotal += 300 * (parseInt(line.querySelector(".tapQty").value) || 0);
-    }
 
-    if (line.querySelector(".holeCheck").checked) {
+    if (line.querySelector(".holeCheck").checked)
       lineTotal += 400 * (parseInt(line.querySelector(".holeQty").value) || 0);
-    }
 
-    if (line.querySelector(".counterCheck").checked) {
+    if (line.querySelector(".counterCheck").checked)
       lineTotal += 1000 * (parseInt(line.querySelector(".counterQty").value) || 0);
-    }
 
-    // 🔥 라인별 금액 표시
     line.querySelector(".lineTotal").textContent =
       lineTotal.toLocaleString() + "원";
 
@@ -103,8 +170,8 @@ function addLine() {
     grandTotal.toLocaleString();
 }
 
-    document.addEventListener("input", function(e) {
-
+// 입력 변경 시 자동 계산
+document.addEventListener("input", function(e) {
   if (
     e.target.classList.contains("lineSize") ||
     e.target.classList.contains("lineColor") ||
@@ -119,9 +186,12 @@ function addLine() {
   ) {
     calculateAllLines();
   }
-
 });
 
-      addLine();
+// 기본 1줄 생성
+addLine();
 calculateAllLines();
-      
+
+</script>
+</body>
+</html>
