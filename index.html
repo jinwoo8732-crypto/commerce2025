@@ -1,8 +1,6 @@
-<button onclick="adminLogin()" 
-        style="position:fixed;bottom:20px;right:20px;
-               background:#2d3436;color:white;
-               padding:8px 12px;border:none;border-radius:6px;">
-관리자
+<button onclick="resetPrices()" 
+        style="background:#f39c12;color:white;padding:6px 12px;border:none;border-radius:6px;">
+기본값 복원
 </button>
 
 <div id="adminPanel" style="display:none;
@@ -89,7 +87,7 @@ button {
 <script>
 
 // 🔥 M 기준 단가 (부가세 포함)
-const prices = {
+const defaultPrices = {
   2020: { silver: 3900, black: 6000 },
   2040: { silver: 6900, black: 9000 },
   3030: { silver: 8900, black: 11000 },
@@ -98,6 +96,8 @@ const prices = {
   4080: { silver: 28000, black: 30000 }
 };
 
+// 🔥 저장된 단가 불러오기
+let prices = JSON.parse(localStorage.getItem("profilePrices")) || defaultPrices;
 function addLine() {
 
   const line = document.createElement("div");
@@ -275,11 +275,25 @@ function savePrices() {
     prices[size][color] = value;
   });
 
-  alert("단가가 수정되었습니다.");
+  // 🔥 브라우저에 저장
+  localStorage.setItem("profilePrices", JSON.stringify(prices));
+
+  alert("단가가 저장되었습니다.");
 
   closeAdmin();
   calculateAllLines();
 }
+
+        function resetPrices() {
+  if (confirm("기본 단가로 복원하시겠습니까?")) {
+    prices = JSON.parse(JSON.stringify(defaultPrices));
+    localStorage.setItem("profilePrices", JSON.stringify(prices));
+    alert("기본 단가로 복원되었습니다.");
+    closeAdmin();
+    calculateAllLines();
+  }
+}
 </body>
 </html>
+
 
