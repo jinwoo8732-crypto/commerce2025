@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 주문번호: ${orderNo}
 고객명: ${name}
 연락처: ${phone}
-총금액: ${total}원
+총금액: ${Number(total).toLocaleString()}원
       `
     });
 
