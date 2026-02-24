@@ -99,6 +99,8 @@ button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
 
 
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+   
 </head>
 
 <body>
@@ -154,6 +156,7 @@ button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
 
 <div class="cart">
 <h3>장바구니</h3>
+   
 <table>
 <thead>
 <tr>
@@ -166,6 +169,7 @@ button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
 <div class="total">총 합계: <span id="grandTotal">0</span> 원</div>
 
 <button class="danger" onclick="clearCart()">전체삭제</button>
+   <button onclick="generatePDF()">PDF 저장</button>
 </div>
 
 </div>
@@ -345,8 +349,57 @@ function resetPrices(){
   }
 }
 
+   // =========================
+// 📄 PDF 생성 기능
+// =========================
+
+async function generatePDF(){
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text("프로파일 견적서", 20, 20);
+
+  doc.setFontSize(11);
+
+  let y = 35;
+
+  // 테이블 헤더
+  doc.text("규격 | 색상 | 길이 | 수량 | 가공 | 금액", 20, y);
+  y += 8;
+
+  let grandTotal = 0;
+
+  document.querySelectorAll("#cartBody tr").forEach(row=>{
+
+    const cells = row.querySelectorAll("td");
+
+    const lineText = [
+      cells[0].textContent,
+      cells[1].textContent,
+      cells[2].textContent,
+      cells[3].textContent,
+      cells[4].textContent,
+      cells[5].textContent
+    ].join(" | ");
+
+    doc.text(lineText, 20, y);
+    y += 8;
+
+    grandTotal += parseInt(cells[5].textContent.replace(/,/g,'')) || 0;
+
+  });
+
+  y += 10;
+  doc.setFontSize(13);
+  doc.text("총 합계: " + grandTotal.toLocaleString() + " 원", 20, y);
+
+  doc.save("견적서.pdf");
+}
 </script>
 </body>
 </html>
+
 
 
