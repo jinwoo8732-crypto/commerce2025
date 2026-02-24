@@ -2,139 +2,212 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>관리자 견적 관리</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로파일 자동견적기</title>
+
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body{font-family:Arial;background:#f4f6f9;padding:30px;}
-.container{max-width:1100px;margin:auto;background:#fff;padding:30px;border-radius:10px;}
-.quote{border:1px solid #ddd;padding:15px;margin-bottom:15px;border-radius:8px;}
-button{padding:6px 10px;border:none;border-radius:6px;cursor:pointer;margin-right:5px;margin-top:5px;}
-.danger{background:#e74c3c;color:#fff;}
-.status{font-weight:bold;padding:3px 8px;border-radius:5px;}
-.접수{background:#ffeaa7;}
-.처리중{background:#74b9ff;color:#fff;}
-.견적완료{background:#55efc4;}
-.filter-bar{margin-bottom:20px;}
-input{padding:6px;border-radius:6px;border:1px solid #ccc;}
+body{font-family:Arial;background:#f2f4f8;margin:0;padding-top:80px;}
+.container{max-width:1100px;margin:auto;background:#fff;padding:30px;border-radius:15px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
+.top-banner{position:fixed;top:0;left:0;width:100%;background:#1f2f54;color:#fff;z-index:9999;padding:10px 0;font-size:14px;}
+.banner-inner{max-width:1100px;margin:auto;display:flex;justify-content:space-between;padding:0 20px;}
+.size-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.size-btn{padding:12px;border:none;border-radius:8px;background:#e9ecf2;cursor:pointer;}
+.size-btn.active{background:#2c3e70;color:#fff;}
+.flex{display:flex;gap:30px;flex-wrap:wrap;}
+.left img{max-width:100%;}
+input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;margin-bottom:10px;}
+.price{font-size:20px;color:#e74c3c;font-weight:bold;margin-top:10px;}
+button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;margin-top:5px;}
+.primary{background:#2c3e70;color:white;}
+.danger{background:#e74c3c;color:white;}
+.cart table{width:100%;border-collapse:collapse;margin-top:20px;}
+.cart th,.cart td{border:1px solid #ddd;padding:6px;text-align:center;}
+.cart th{background:#f0f0f0;}
+.total{text-align:right;font-weight:bold;margin-top:10px;}
+.customer-form{margin-top:30px;padding:20px;background:#f7f9fc;border-radius:10px;}
+@media(max-width:768px){.size-grid{grid-template-columns:repeat(2,1fr);} .flex{flex-direction:column;}}
 </style>
 </head>
+
 <body>
+
+<div class="top-banner">
+  <div class="banner-inner">
+    <div><strong>프로파일커머스</strong> | 자동견적 시스템</div>
+    <div>📞 042-934-8889 / 010-3428-0929 | ✉ jinu8732@naver.com (VAT 포함)</div>
+  </div>
+</div>
 
 <div class="container">
 
-<h2>관리자 견적 관리 페이지</h2>
+<h2>1. 규격 선택</h2>
+<div class="size-grid" id="sizeGrid"></div>
 
-<div class="filter-bar">
-  <button onclick="filterStatus('전체')">전체</button>
-  <button onclick="filterStatus('접수')">접수</button>
-  <button onclick="filterStatus('처리중')">처리중</button>
-  <button onclick="filterStatus('견적완료')">견적완료</button>
-
-  <input type="text" id="searchInput" placeholder="고객명 검색">
-  <button onclick="searchQuote()">검색</button>
-
-  <button onclick="downloadExcel()">엑셀 다운로드</button>
+<h2>2. 길이 및 수량</h2>
+<div class="flex">
+<div class="left"><img id="previewImage"></div>
+<div class="right">
+<select id="color">
+<option value="silver">실버</option>
+<option value="black">블랙</option>
+</select>
+<input type="number" id="length" value="100" min="50">
+<input type="number" id="qty" value="1" min="1">
+<div class="price" id="price">0 원</div>
+</div>
 </div>
 
-<div id="quoteList"></div>
+<h2>3. 가공 옵션</h2>
+탭 <input type="number" id="tapQty" value="0" min="0" style="width:70px;">
+홀 <input type="number" id="holeQty" value="0" min="0" style="width:70px;">
+카운터 <input type="number" id="counterQty" value="0" min="0" style="width:70px;">
+<br><br>
+<button class="primary" onclick="addToCart()">제품담기</button>
 
-<button class="danger" onclick="clearAll()">전체 삭제</button>
+<h2>견적 요청 정보</h2>
+<div class="customer-form">
+<input type="text" id="custName" placeholder="고객명">
+<input type="text" id="custPhone" placeholder="연락처">
+<input type="email" id="customerEmail" placeholder="이메일">
+<textarea id="custMemo" rows="3" placeholder="요청사항"></textarea>
+<button class="primary" onclick="sendQuoteRequest()">견적 요청하기</button>
+</div>
+
+<div class="cart">
+<h2>장바구니</h2>
+<table>
+<thead>
+<tr>
+<th>규격</th><th>색상</th><th>길이</th><th>수량</th><th>가공</th><th>금액</th><th>삭제</th>
+</tr>
+</thead>
+<tbody id="cartBody"></tbody>
+</table>
+<div class="total">총 합계: <span id="grandTotal">0</span> 원</div>
+<button onclick="generatePDF()">PDF 저장</button>
+<button class="danger" onclick="clearCart()">전체삭제</button>
+</div>
 
 </div>
 
 <script>
+emailjs.init("YOUR_PUBLIC_KEY");
 
-let pw = prompt("관리자 비밀번호 입력");
-if(pw !== "bandotec123"){
-  alert("접근 불가");
-  document.body.innerHTML="";
+const prices={
+2020:{silver:3900,black:6000},
+2040:{silver:6900,black:9000},
+3030:{silver:8900,black:11000},
+3060:{silver:14000,black:18000},
+4040:{silver:16000,black:19000},
+4080:{silver:28000,black:30000}
+};
+
+let selectedSize="2020";
+
+function createSizeButtons(){
+const grid=document.getElementById("sizeGrid");
+Object.keys(prices).forEach(size=>{
+const btn=document.createElement("button");
+btn.textContent=size;
+btn.className="size-btn";
+btn.onclick=function(){
+document.querySelectorAll(".size-btn").forEach(b=>b.classList.remove("active"));
+btn.classList.add("active");
+selectedSize=size;
+updatePrice();
+};
+grid.appendChild(btn);
+});
+document.querySelector(".size-btn").classList.add("active");
 }
 
-let quoteList = JSON.parse(localStorage.getItem("quoteList")) || [];
-let filteredList = [...quoteList];
-let container = document.getElementById("quoteList");
-
-function renderList(){
-  container.innerHTML="";
-
-  filteredList.forEach((q,index)=>{
-
-    let div=document.createElement("div");
-    div.className="quote";
-
-    div.innerHTML=`
-      <strong>접수일:</strong> ${q.date}<br>
-      <strong>고객명:</strong> ${q.name}<br>
-      <strong>연락처:</strong> ${q.phone}<br>
-      <strong>이메일:</strong> ${q.email}<br>
-      <strong>상태:</strong> <span class="status ${q.status}">${q.status}</span>
-      <br><br>
-      <pre>${q.details}</pre>
-      <button onclick="changeStatus(${quoteList.indexOf(q)},'접수')">접수</button>
-      <button onclick="changeStatus(${quoteList.indexOf(q)},'처리중')">처리중</button>
-      <button onclick="changeStatus(${quoteList.indexOf(q)},'견적완료')">견적완료</button>
-      <button onclick="deleteQuote(${quoteList.indexOf(q)})">삭제</button>
-    `;
-
-    container.appendChild(div);
-  });
+function updatePrice(){
+let color=document.getElementById("color").value;
+let length=parseInt(document.getElementById("length").value)||0;
+let qty=parseInt(document.getElementById("qty").value)||0;
+if(length<50) length=50;
+let unit100=Math.ceil(length/100);
+let base100=prices[selectedSize][color]/10;
+let total=unit100*base100*qty;
+total+=300*(parseInt(tapQty.value)||0);
+total+=400*(parseInt(holeQty.value)||0);
+total+=1000*(parseInt(counterQty.value)||0);
+price.textContent=total.toLocaleString()+" 원";
+previewImage.src="images/"+selectedSize+"_"+color+".png";
 }
 
-function changeStatus(i,status){
-  quoteList[i].status=status;
-  localStorage.setItem("quoteList", JSON.stringify(quoteList));
-  filteredList=[...quoteList];
-  renderList();
+document.addEventListener("input",updatePrice);
+
+function addToCart(){
+const row=document.createElement("tr");
+row.innerHTML=`
+<td>${selectedSize}</td>
+<td>${color.value}</td>
+<td>${length.value}mm</td>
+<td>${qty.value}</td>
+<td>탭:${tapQty.value} 홀:${holeQty.value} 카운터:${counterQty.value}</td>
+<td>${price.textContent}</td>
+<td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
+`;
+cartBody.appendChild(row);
+updateGrand();
 }
 
-function deleteQuote(i){
-  quoteList.splice(i,1);
-  localStorage.setItem("quoteList", JSON.stringify(quoteList));
-  filteredList=[...quoteList];
-  renderList();
+function updateGrand(){
+let g=0;
+document.querySelectorAll("#cartBody tr").forEach(r=>{
+g+=parseInt(r.children[5].textContent.replace(/,/g,''))||0;
+});
+grandTotal.textContent=g.toLocaleString();
 }
 
-function clearAll(){
-  if(confirm("전체 삭제하시겠습니까?")){
-    localStorage.removeItem("quoteList");
-    quoteList=[];
-    filteredList=[];
-    renderList();
-  }
+function clearCart(){cartBody.innerHTML="";updateGrand();}
+
+function generatePDF(){
+const { jsPDF }=window.jspdf;
+const doc=new jsPDF();
+doc.text("프로파일 견적서",20,20);
+let y=30,total=0;
+document.querySelectorAll("#cartBody tr").forEach(row=>{
+const cells=row.querySelectorAll("td");
+doc.text(cells[0].textContent+" | "+cells[5].textContent,20,y);
+y+=8;
+total+=parseInt(cells[5].textContent.replace(/,/g,''))||0;
+});
+doc.text("총합계: "+total.toLocaleString()+" 원",20,y+10);
+doc.save("견적서.pdf");
 }
 
-function filterStatus(status){
-  if(status==="전체"){
-    filteredList=[...quoteList];
-  }else{
-    filteredList=quoteList.filter(q=>q.status===status);
-  }
-  renderList();
+function sendQuoteRequest(){
+let name=custName.value;
+let phone=custPhone.value;
+if(!name||!phone){alert("고객명/연락처 입력");return;}
+
+let message="고객명: "+name+"\n연락처: "+phone+"\n\n";
+document.querySelectorAll("#cartBody tr").forEach(row=>{
+const cells=row.querySelectorAll("td");
+message+=cells[0].textContent+" / "+cells[5].textContent+"\n";
+});
+
+let quoteList=JSON.parse(localStorage.getItem("quoteList"))||[];
+quoteList.push({
+id:Date.now(),
+date:new Date().toLocaleString(),
+name,
+phone,
+email:customerEmail.value,
+details:message,
+status:"접수"
+});
+localStorage.setItem("quoteList",JSON.stringify(quoteList));
+
+alert("견적 요청이 접수되었습니다.");
 }
 
-function searchQuote(){
-  let keyword=document.getElementById("searchInput").value;
-  filteredList=quoteList.filter(q=>q.name.includes(keyword));
-  renderList();
-}
-
-function downloadExcel(){
-
-  let csv="접수일,고객명,연락처,이메일,상태\n";
-
-  quoteList.forEach(q=>{
-    csv+=`${q.date},${q.name},${q.phone},${q.email},${q.status}\n`;
-  });
-
-  let blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-  let link=document.createElement("a");
-  link.href=URL.createObjectURL(blob);
-  link.download="견적목록.csv";
-  link.click();
-}
-
-renderList();
-
+window.onload=function(){createSizeButtons();updatePrice();}
 </script>
 </body>
 </html>
