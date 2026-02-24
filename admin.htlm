@@ -1,1 +1,56 @@
-admin.html (관리자 견적 관리 페이지)
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>관리자 견적 관리</title>
+<style>
+body{font-family:Arial;background:#f4f6f9;padding:30px;}
+.container{max-width:900px;margin:auto;background:#fff;padding:30px;border-radius:10px;}
+.quote{border:1px solid #ddd;padding:15px;margin-bottom:15px;border-radius:8px;}
+button{padding:6px 10px;border:none;border-radius:6px;cursor:pointer;}
+.danger{background:#e74c3c;color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h2>관리자 견적 관리 페이지</h2>
+<div id="quoteList"></div>
+<button class="danger" onclick="clearAll()">전체 삭제</button>
+</div>
+
+<script>
+let pw=prompt("관리자 비밀번호 입력");
+if(pw!=="bandotec123"){alert("접근 불가");document.body.innerHTML="";}
+
+let quoteList=JSON.parse(localStorage.getItem("quoteList"))||[];
+let container=document.getElementById("quoteList");
+
+quoteList.forEach((q,index)=>{
+let div=document.createElement("div");
+div.className="quote";
+div.innerHTML=`
+<strong>접수일:</strong> ${q.date}<br>
+<strong>고객명:</strong> ${q.name}<br>
+<strong>연락처:</strong> ${q.phone}<br>
+<strong>이메일:</strong> ${q.email}<br><br>
+<pre>${q.details}</pre>
+<button onclick="deleteQuote(${index})">삭제</button>
+`;
+container.appendChild(div);
+});
+
+function deleteQuote(i){
+quoteList.splice(i,1);
+localStorage.setItem("quoteList",JSON.stringify(quoteList));
+location.reload();
+}
+
+function clearAll(){
+if(confirm("전체 삭제하시겠습니까?")){
+localStorage.removeItem("quoteList");
+location.reload();
+}}
+</script>
+</body>
+</html>
