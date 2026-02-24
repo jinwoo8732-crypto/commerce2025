@@ -5,191 +5,113 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프로파일 자동견적기</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
-body{font-family:Arial;background:#f2f4f8;margin:0;padding-top:80px;}
-.container{max-width:1100px;margin:auto;background:#fff;padding:30px;border-radius:15px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
-.top-banner{position:fixed;top:0;left:0;width:100%;background:#1f2f54;color:#fff;z-index:9999;padding:10px 0;font-size:14px;}
-.banner-inner{max-width:1100px;margin:auto;display:flex;justify-content:space-between;padding:0 20px;}
-.size-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.size-btn{padding:12px;border:none;border-radius:8px;background:#e9ecf2;cursor:pointer;}
-.size-btn.active{background:#2c3e70;color:#fff;}
-.flex{display:flex;gap:30px;flex-wrap:wrap;}
-.left img{max-width:100%;}
-input,select,textarea{padding:6px;border-radius:6px;border:1px solid #ccc;}
-.price{font-size:20px;color:#e74c3c;font-weight:bold;margin-top:10px;}
-button{padding:6px 10px;border:none;border-radius:6px;cursor:pointer;margin-top:5px;}
-.primary{background:#2c3e70;color:white;}
-.danger{background:#e74c3c;color:white;}
-.cart table{width:100%;border-collapse:collapse;margin-top:20px;}
-.cart th,.cart td{border:1px solid #ddd;padding:6px;text-align:center;}
-.cart th{background:#f0f0f0;}
-.total{text-align:right;font-weight:bold;margin-top:10px;}
+body{font-family:Arial;background:#f2f4f8;margin:0;padding:40px;}
+.container{max-width:1000px;margin:auto;background:#fff;padding:30px;border-radius:12px;}
+button{padding:8px 12px;border:none;border-radius:6px;background:#2c3e70;color:#fff;cursor:pointer;}
+input,select{padding:6px;margin:5px 0;}
 </style>
 </head>
 
 <body>
-
-<div class="top-banner">
-  <div class="banner-inner">
-    <div><strong>프로파일커머스</strong> | 자동견적 시스템</div>
-    <div>📞 042-934-8889 / 010-3428-0929 | VAT 포함</div>
-  </div>
-</div>
-
 <div class="container">
 
-<h2>1. 규격 선택</h2>
-<div class="size-grid" id="sizeGrid"></div>
+<h2>자동견적</h2>
 
-<h2>2. 길이 및 수량</h2>
+<select id="size">
+<option value="2020">2020</option>
+<option value="2040">2040</option>
+<option value="3030">3030</option>
+<option value="3060">3060</option>
+<option value="4040">4040</option>
+<option value="4080">4080</option>
+</select>
+
 <select id="color">
 <option value="silver">실버</option>
 <option value="black">블랙</option>
 </select>
-<input type="number" id="length" value="100" min="50">
-<input type="number" id="qty" value="1" min="1">
-<div class="price" id="price">0 원</div>
 
-<h2>3. 가공 옵션</h2>
-탭 <input type="number" id="tapQty" value="0" min="0" style="width:60px;">
-홀 <input type="number" id="holeQty" value="0" min="0" style="width:60px;">
-카운터 <input type="number" id="counterQty" value="0" min="0" style="width:60px;">
+<input type="number" id="length" placeholder="길이(mm)">
+<input type="number" id="qty" placeholder="수량">
+
 <br><br>
-<button class="primary" onclick="addToCart()">제품담기</button>
 
-<div class="cart">
-<h2>장바구니</h2>
-<table>
-<thead>
-<tr>
-<th>규격</th><th>색상</th><th>길이</th><th>수량</th>
-<th>탭</th><th>홀</th><th>카운터</th>
-<th>금액</th><th>삭제</th>
-</tr>
-</thead>
-<tbody id="cartBody"></tbody>
-</table>
-<div class="total">총 합계: <span id="grandTotal">0</span> 원</div>
-</div>
+<input type="text" id="name" placeholder="고객명">
+<input type="text" id="phone" placeholder="연락처">
+<input type="email" id="email" placeholder="이메일">
+
+<br><br>
+
+<button onclick="submitQuote()">견적 요청</button>
 
 </div>
 
 <script>
 
-const prices={
-2020:{silver:3900,black:6000},
-2040:{silver:6900,black:9000},
-3030:{silver:8900,black:11000},
-3060:{silver:14000,black:18000},
-4040:{silver:16000,black:19000},
-4080:{silver:28000,black:30000}
-};
+const supabase = window.supabase.createClient(
+  "https://uujjbrytvrkhctfpknol.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1ampicnl0dnJraGN0ZnBrbm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4OTQ4MTIsImV4cCI6MjA4NzQ3MDgxMn0.rf1NdA5puP0CG-TA5nI_fwk3KhMN5QmxXH3P3xOIToo"
+);
 
-let selectedSize="2020";
+async function generateOrderNo(){
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,'0');
+  const d = String(today.getDate()).padStart(2,'0');
 
-function createSizeButtons(){
-const grid=document.getElementById("sizeGrid");
-Object.keys(prices).forEach(size=>{
-const btn=document.createElement("button");
-btn.textContent=size;
-btn.className="size-btn";
-btn.onclick=function(){
-document.querySelectorAll(".size-btn").forEach(b=>b.classList.remove("active"));
-btn.classList.add("active");
-selectedSize=size;
-updatePrice();
-};
-grid.appendChild(btn);
-});
-document.querySelector(".size-btn").classList.add("active");
+  const { data } = await supabase
+    .from("quotes")
+    .select("id", { count: 'exact' });
+
+  const count = data.length + 1;
+
+  return `BD-${y}${m}${d}-${String(count).padStart(4,'0')}`;
 }
 
-function calculateLine(size,color,length,qty,tap,hole,counter){
-if(length<50) length=50;
-let unit100=Math.ceil(length/100);
-let base100=prices[size][color]/10;
-let total=unit100*base100*qty;
-total+=300*tap;
-total+=400*hole;
-total+=1000*counter;
-return {total,calculatedLength:unit100*100};
+async function submitQuote(){
+
+  const size = document.getElementById("size").value;
+  const color = document.getElementById("color").value;
+  const length = document.getElementById("length").value;
+  const qty = document.getElementById("qty").value;
+
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const email = document.getElementById("email").value;
+
+  if(!name || !phone){
+    alert("고객명과 연락처 입력");
+    return;
+  }
+
+  const orderNo = await generateOrderNo();
+
+  const items = `${size} / ${color} / ${length}mm / ${qty}개`;
+
+  const { error } = await supabase
+    .from("quotes")
+    .insert([
+      {
+        order_no: orderNo,
+        name: name,
+        phone: phone,
+        email: email,
+        items: items,
+        total: 0,
+        status: "접수"
+      }
+    ]);
+
+  if(error){
+    alert("DB 저장 실패");
+    console.log(error);
+  } else {
+    alert("견적 접수 완료\n주문번호: " + orderNo);
+  }
 }
-
-function updatePrice(){
-let color=document.getElementById("color").value;
-let length=parseInt(document.getElementById("length").value)||0;
-let qty=parseInt(document.getElementById("qty").value)||0;
-let tap=parseInt(tapQty.value)||0;
-let hole=parseInt(holeQty.value)||0;
-let counter=parseInt(counterQty.value)||0;
-
-let result=calculateLine(selectedSize,color,length,qty,tap,hole,counter);
-price.textContent=result.total.toLocaleString()+" 원";
-}
-
-document.addEventListener("input",updatePrice);
-
-function addToCart(){
-
-let color=color.value;
-let length=parseInt(document.getElementById("length").value)||0;
-let qty=parseInt(document.getElementById("qty").value)||0;
-let tap=parseInt(tapQty.value)||0;
-let hole=parseInt(holeQty.value)||0;
-let counter=parseInt(counterQty.value)||0;
-
-let result=calculateLine(selectedSize,color,length,qty,tap,hole,counter);
-
-const row=document.createElement("tr");
-
-row.innerHTML=`
-<td>${selectedSize}</td>
-<td>${color}</td>
-<td><input type="number" value="${result.calculatedLength}" min="50"></td>
-<td><input type="number" value="${qty}" min="1"></td>
-<td><input type="number" value="${tap}" min="0"></td>
-<td><input type="number" value="${hole}" min="0"></td>
-<td><input type="number" value="${counter}" min="0"></td>
-<td class="linePrice">${result.total.toLocaleString()}</td>
-<td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
-`;
-
-row.querySelectorAll("input").forEach(input=>{
-input.addEventListener("input",()=>recalculateRow(row));
-});
-
-cartBody.appendChild(row);
-updateGrand();
-}
-
-function recalculateRow(row){
-
-let size=row.children[0].textContent;
-let color=row.children[1].textContent;
-
-let length=parseInt(row.children[2].querySelector("input").value)||0;
-let qty=parseInt(row.children[3].querySelector("input").value)||0;
-let tap=parseInt(row.children[4].querySelector("input").value)||0;
-let hole=parseInt(row.children[5].querySelector("input").value)||0;
-let counter=parseInt(row.children[6].querySelector("input").value)||0;
-
-let result=calculateLine(size,color,length,qty,tap,hole,counter);
-
-row.children[2].querySelector("input").value=result.calculatedLength;
-row.querySelector(".linePrice").textContent=result.total.toLocaleString();
-
-updateGrand();
-}
-
-function updateGrand(){
-let g=0;
-document.querySelectorAll(".linePrice").forEach(cell=>{
-g+=parseInt(cell.textContent.replace(/,/g,''))||0;
-});
-grandTotal.textContent=g.toLocaleString();
-}
-
-window.onload=function(){createSizeButtons();updatePrice();}
 
 </script>
 
