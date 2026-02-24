@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프로파일 자동견적기</title>
 
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
 body{font-family:Arial;background:#f2f4f8;margin:0;padding-top:80px;}
 .container{max-width:1100px;margin:auto;background:#fff;padding:30px;border-radius:15px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
@@ -18,17 +15,15 @@ body{font-family:Arial;background:#f2f4f8;margin:0;padding-top:80px;}
 .size-btn.active{background:#2c3e70;color:#fff;}
 .flex{display:flex;gap:30px;flex-wrap:wrap;}
 .left img{max-width:100%;}
-input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;margin-bottom:10px;}
+input,select,textarea{padding:6px;border-radius:6px;border:1px solid #ccc;}
 .price{font-size:20px;color:#e74c3c;font-weight:bold;margin-top:10px;}
-button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;margin-top:5px;}
+button{padding:6px 10px;border:none;border-radius:6px;cursor:pointer;margin-top:5px;}
 .primary{background:#2c3e70;color:white;}
 .danger{background:#e74c3c;color:white;}
 .cart table{width:100%;border-collapse:collapse;margin-top:20px;}
 .cart th,.cart td{border:1px solid #ddd;padding:6px;text-align:center;}
 .cart th{background:#f0f0f0;}
 .total{text-align:right;font-weight:bold;margin-top:10px;}
-.customer-form{margin-top:30px;padding:20px;background:#f7f9fc;border-radius:10px;}
-@media(max-width:768px){.size-grid{grid-template-columns:repeat(2,1fr);} .flex{flex-direction:column;}}
 </style>
 </head>
 
@@ -37,7 +32,7 @@ button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;margin-top:
 <div class="top-banner">
   <div class="banner-inner">
     <div><strong>프로파일커머스</strong> | 자동견적 시스템</div>
-    <div>📞 042-934-8889 / 010-3428-0929 | ✉ jinu8732@naver.com (VAT 포함)</div>
+    <div>📞 042-934-8889 / 010-3428-0929 | VAT 포함</div>
   </div>
 </div>
 
@@ -47,9 +42,6 @@ button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;margin-top:
 <div class="size-grid" id="sizeGrid"></div>
 
 <h2>2. 길이 및 수량</h2>
-<div class="flex">
-<div class="left"><img id="previewImage"></div>
-<div class="right">
 <select id="color">
 <option value="silver">실버</option>
 <option value="black">블랙</option>
@@ -57,44 +49,32 @@ button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;margin-top:
 <input type="number" id="length" value="100" min="50">
 <input type="number" id="qty" value="1" min="1">
 <div class="price" id="price">0 원</div>
-</div>
-</div>
 
 <h2>3. 가공 옵션</h2>
-탭 <input type="number" id="tapQty" value="0" min="0" style="width:70px;">
-홀 <input type="number" id="holeQty" value="0" min="0" style="width:70px;">
-카운터 <input type="number" id="counterQty" value="0" min="0" style="width:70px;">
+탭 <input type="number" id="tapQty" value="0" min="0" style="width:60px;">
+홀 <input type="number" id="holeQty" value="0" min="0" style="width:60px;">
+카운터 <input type="number" id="counterQty" value="0" min="0" style="width:60px;">
 <br><br>
 <button class="primary" onclick="addToCart()">제품담기</button>
-
-<h2>견적 요청 정보</h2>
-<div class="customer-form">
-<input type="text" id="custName" placeholder="고객명">
-<input type="text" id="custPhone" placeholder="연락처">
-<input type="email" id="customerEmail" placeholder="이메일">
-<textarea id="custMemo" rows="3" placeholder="요청사항"></textarea>
-<button class="primary" onclick="sendQuoteRequest()">견적 요청하기</button>
-</div>
 
 <div class="cart">
 <h2>장바구니</h2>
 <table>
 <thead>
 <tr>
-<th>규격</th><th>색상</th><th>길이</th><th>수량</th><th>가공</th><th>금액</th><th>삭제</th>
+<th>규격</th><th>색상</th><th>길이</th><th>수량</th>
+<th>탭</th><th>홀</th><th>카운터</th>
+<th>금액</th><th>삭제</th>
 </tr>
 </thead>
 <tbody id="cartBody"></tbody>
 </table>
 <div class="total">총 합계: <span id="grandTotal">0</span> 원</div>
-<button onclick="generatePDF()">PDF 저장</button>
-<button class="danger" onclick="clearCart()">전체삭제</button>
 </div>
 
 </div>
 
 <script>
-emailjs.init("YOUR_PUBLIC_KEY");
 
 const prices={
 2020:{silver:3900,black:6000},
@@ -124,101 +104,94 @@ grid.appendChild(btn);
 document.querySelector(".size-btn").classList.add("active");
 }
 
+function calculateLine(size,color,length,qty,tap,hole,counter){
+if(length<50) length=50;
+let unit100=Math.ceil(length/100);
+let base100=prices[size][color]/10;
+let total=unit100*base100*qty;
+total+=300*tap;
+total+=400*hole;
+total+=1000*counter;
+return {total,calculatedLength:unit100*100};
+}
+
 function updatePrice(){
 let color=document.getElementById("color").value;
 let length=parseInt(document.getElementById("length").value)||0;
 let qty=parseInt(document.getElementById("qty").value)||0;
-if(length<50) length=50;
-let unit100=Math.ceil(length/100);
-let base100=prices[selectedSize][color]/10;
-let total=unit100*base100*qty;
-total+=300*(parseInt(tapQty.value)||0);
-total+=400*(parseInt(holeQty.value)||0);
-total+=1000*(parseInt(counterQty.value)||0);
-price.textContent=total.toLocaleString()+" 원";
-previewImage.src="images/"+selectedSize+"_"+color+".png";
+let tap=parseInt(tapQty.value)||0;
+let hole=parseInt(holeQty.value)||0;
+let counter=parseInt(counterQty.value)||0;
+
+let result=calculateLine(selectedSize,color,length,qty,tap,hole,counter);
+price.textContent=result.total.toLocaleString()+" 원";
 }
 
 document.addEventListener("input",updatePrice);
+
 function addToCart(){
 
-  let lengthValue = parseInt(document.getElementById("length").value) || 0;
-  let qtyValue = parseInt(document.getElementById("qty").value) || 0;
-  let colorValue = document.getElementById("color").value;
+let color=color.value;
+let length=parseInt(document.getElementById("length").value)||0;
+let qty=parseInt(document.getElementById("qty").value)||0;
+let tap=parseInt(tapQty.value)||0;
+let hole=parseInt(holeQty.value)||0;
+let counter=parseInt(counterQty.value)||0;
 
-  // 🔥 100mm 올림 계산
-  let unit100 = Math.ceil(lengthValue / 100);
-  let calculatedLength = unit100 * 100;
+let result=calculateLine(selectedSize,color,length,qty,tap,hole,counter);
 
-  const row = document.createElement("tr");
+const row=document.createElement("tr");
 
-  row.innerHTML = `
-    <td>${selectedSize}</td>
-    <td>${colorValue}</td>
-    <td>${calculatedLength}mm</td>
-    <td>${qtyValue}</td>
-    <td>탭:${tapQty.value} 홀:${holeQty.value} 카운터:${counterQty.value}</td>
-    <td>${price.textContent}</td>
-    <td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
-  `;
+row.innerHTML=`
+<td>${selectedSize}</td>
+<td>${color}</td>
+<td><input type="number" value="${result.calculatedLength}" min="50"></td>
+<td><input type="number" value="${qty}" min="1"></td>
+<td><input type="number" value="${tap}" min="0"></td>
+<td><input type="number" value="${hole}" min="0"></td>
+<td><input type="number" value="${counter}" min="0"></td>
+<td class="linePrice">${result.total.toLocaleString()}</td>
+<td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
+`;
 
-  cartBody.appendChild(row);
-  updateGrand();
+row.querySelectorAll("input").forEach(input=>{
+input.addEventListener("input",()=>recalculateRow(row));
+});
+
+cartBody.appendChild(row);
+updateGrand();
+}
+
+function recalculateRow(row){
+
+let size=row.children[0].textContent;
+let color=row.children[1].textContent;
+
+let length=parseInt(row.children[2].querySelector("input").value)||0;
+let qty=parseInt(row.children[3].querySelector("input").value)||0;
+let tap=parseInt(row.children[4].querySelector("input").value)||0;
+let hole=parseInt(row.children[5].querySelector("input").value)||0;
+let counter=parseInt(row.children[6].querySelector("input").value)||0;
+
+let result=calculateLine(size,color,length,qty,tap,hole,counter);
+
+row.children[2].querySelector("input").value=result.calculatedLength;
+row.querySelector(".linePrice").textContent=result.total.toLocaleString();
+
+updateGrand();
 }
 
 function updateGrand(){
 let g=0;
-document.querySelectorAll("#cartBody tr").forEach(r=>{
-g+=parseInt(r.children[5].textContent.replace(/,/g,''))||0;
+document.querySelectorAll(".linePrice").forEach(cell=>{
+g+=parseInt(cell.textContent.replace(/,/g,''))||0;
 });
 grandTotal.textContent=g.toLocaleString();
 }
 
-function clearCart(){cartBody.innerHTML="";updateGrand();}
-
-function generatePDF(){
-const { jsPDF }=window.jspdf;
-const doc=new jsPDF();
-doc.text("프로파일 견적서",20,20);
-let y=30,total=0;
-document.querySelectorAll("#cartBody tr").forEach(row=>{
-const cells=row.querySelectorAll("td");
-doc.text(cells[0].textContent+" | "+cells[5].textContent,20,y);
-y+=8;
-total+=parseInt(cells[5].textContent.replace(/,/g,''))||0;
-});
-doc.text("총합계: "+total.toLocaleString()+" 원",20,y+10);
-doc.save("견적서.pdf");
-}
-
-function sendQuoteRequest(){
-let name=custName.value;
-let phone=custPhone.value;
-if(!name||!phone){alert("고객명/연락처 입력");return;}
-
-let message="고객명: "+name+"\n연락처: "+phone+"\n\n";
-document.querySelectorAll("#cartBody tr").forEach(row=>{
-const cells=row.querySelectorAll("td");
-message+=cells[0].textContent+" / "+cells[5].textContent+"\n";
-});
-
-let quoteList=JSON.parse(localStorage.getItem("quoteList"))||[];
-quoteList.push({
-id:Date.now(),
-date:new Date().toLocaleString(),
-name,
-phone,
-email:customerEmail.value,
-details:message,
-status:"접수"
-});
-localStorage.setItem("quoteList",JSON.stringify(quoteList));
-
-alert("견적 요청이 접수되었습니다.");
-}
-
 window.onload=function(){createSizeButtons();updatePrice();}
+
 </script>
+
 </body>
 </html>
-
