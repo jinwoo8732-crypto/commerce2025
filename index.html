@@ -140,20 +140,30 @@ previewImage.src="images/"+selectedSize+"_"+color+".png";
 }
 
 document.addEventListener("input",updatePrice);
-
 function addToCart(){
-const row=document.createElement("tr");
-row.innerHTML=`
-<td>${selectedSize}</td>
-<td>${color.value}</td>
-<td>${length.value}mm</td>
-<td>${qty.value}</td>
-<td>탭:${tapQty.value} 홀:${holeQty.value} 카운터:${counterQty.value}</td>
-<td>${price.textContent}</td>
-<td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
-`;
-cartBody.appendChild(row);
-updateGrand();
+
+  let lengthValue = parseInt(document.getElementById("length").value) || 0;
+  let qtyValue = parseInt(document.getElementById("qty").value) || 0;
+  let colorValue = document.getElementById("color").value;
+
+  // 🔥 100mm 올림 계산
+  let unit100 = Math.ceil(lengthValue / 100);
+  let calculatedLength = unit100 * 100;
+
+  const row = document.createElement("tr");
+
+  row.innerHTML = `
+    <td>${selectedSize}</td>
+    <td>${colorValue}</td>
+    <td>${calculatedLength}mm</td>
+    <td>${qtyValue}</td>
+    <td>탭:${tapQty.value} 홀:${holeQty.value} 카운터:${counterQty.value}</td>
+    <td>${price.textContent}</td>
+    <td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
+  `;
+
+  cartBody.appendChild(row);
+  updateGrand();
 }
 
 function updateGrand(){
@@ -211,3 +221,4 @@ window.onload=function(){createSizeButtons();updatePrice();}
 </script>
 </body>
 </html>
+
