@@ -1,43 +1,118 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>관리자 페이지</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 견적 관리</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{font-family:Arial;background:#f2f4f8;margin:0;padding:40px;}
+.container{max-width:1200px;margin:auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
+h2{margin-bottom:20px;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:14px;}
+th{background:#2c3e70;color:#fff;}
+button{padding:6px 10px;border:none;border-radius:6px;background:#2c3e70;color:#fff;cursor:pointer;}
+select{padding:4px;}
+.deleteBtn{background:#c0392b;}
+</style>
 </head>
+
 <body>
 
-<h2>관리자 견적 관리</h2>
-<div id="list"></div>
+<div class="container">
+<h2>📋 관리자 견적 관리 페이지</h2>
+
+<table>
+<thead>
+<tr>
+<th>주문번호</th>
+<th>고객명</th>
+<th>연락처</th>
+<th>이메일</th>
+<th>총금액</th>
+<th>상태</th>
+<th>관리</th>
+</tr>
+</thead>
+<tbody id="quoteTable"></tbody>
+</table>
+
+</div>
 
 <script>
 
-const supabase = window.supabase.createClient(
+// ✅ Supabase 연결 (한 번만 선언)
+const supabaseClient = window.supabase.createClient(
   "https://uujjbrytvrkhctfpknol.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1ampicnl0dnJraGN0ZnBrbm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4OTQ4MTIsImV4cCI6MjA4NzQ3MDgxMn0.rf1NdA5puP0CG-TA5nI_fwk3KhMN5QmxXH3P3xOIToo"
 );
-  
+
 async function loadQuotes(){
-const { data }=await supabase.from("quotes").select("*").order("created_at",{ascending:false});
-const container=document.getElementById("list");
-container.innerHTML="";
+const { data, error } = await supabaseClient
+.from("quotes")
+.select("*")
+.order("created_at",{ascending:false});
+
+if(error){
+console.log(error);
+return;
+}
+
+const table=document.getElementById("quoteTable");
+table.innerHTML="";
 
 data.forEach(q=>{
-const div=document.createElement("div");
-div.innerHTML=`
-<hr>
-주문번호: ${q.order_no}<br>
-고객명: ${q.name}<br>
-연락처: ${q.phone}<br>
-총금액: ${q.total}원<br>
-상태: ${q.status}
+const row=document.createElement("tr");
+
+row.innerHTML=`
+<td>${q.order_no}</td>
+<td>${q.name}</td>
+<td>${q.phone}</td>
+<td>${q.email||"-"}</td>
+<td>${q.total.toLocaleString()} 원</td>
+<td>
+<select onchange="updateStatus('${q.id}', this.value)">
+<option value="접수" ${q.status==="접수"?"selected":""}>접수</option>
+<option value="확인중" ${q.status==="확인중"?"selected":""}>확인중</option>
+<option value="견적완료" ${q.status==="견적완료"?"selected":""}>견적완료</option>
+<option value="출고완료" ${q.status==="출고완료"?"selected":""}>출고완료</option>
+</select>
+</td>
+<td>
+<button class="deleteBtn" onclick="deleteQuote('${q.id}')">삭제</button>
+</td>
 `;
-container.appendChild(div);
+
+table.appendChild(row);
 });
 }
 
+async function updateStatus(id,newStatus){
+await supabaseClient
+.from("quotes")
+.update({status:newStatus})
+.eq("id",id);
+
+alert("상태 변경 완료");
+}
+
+async function deleteQuote(id){
+if(!confirm("정말 삭제하시겠습니까?")) return;
+
+await supabaseClient
+.from("quotes")
+.delete()
+.eq("id",id);
+
 loadQuotes();
+}
+
+window.onload=loadQuotes;
 
 </script>
+
 </body>
 </html>
