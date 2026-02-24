@@ -14,9 +14,9 @@
 
 const supabase = window.supabase.createClient(
   "https://uujjbrytvrkhctfpknol.supabase.co",
-  "여기에_anon_public_key_그대로_넣기"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1ampicnl0dnJraGN0ZnBrbm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4OTQ4MTIsImV4cCI6MjA4NzQ3MDgxMn0.rf1NdA5puP0CG-TA5nI_fwk3KhMN5QmxXH3P3xOIToo"
 );
-
+  
 async function loadQuotes(){
 const { data }=await supabase.from("quotes").select("*").order("created_at",{ascending:false});
 const container=document.getElementById("list");
