@@ -32,7 +32,6 @@ button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;margin-top:
 .cart th{background:#f0f0f0;}
 .total{text-align:right;font-weight:bold;margin-top:10px;}
 .admin-btn{position:fixed;bottom:20px;right:20px;background:#111;color:#fff;}
-
 @media(max-width:768px){
 .size-grid{grid-template-columns:repeat(2,1fr);}
 .flex{flex-direction:column;}
@@ -43,52 +42,8 @@ button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;margin-top:
 <body>
 <div class="container">
 
-// ==========================
-// 규격 버튼 생성 (안전버전)
-// ==========================
-
-function createSizeButtons(){
-
-  const sizeGrid = document.getElementById("sizeGrid");
-
-  if(!sizeGrid){
-    console.log("sizeGrid 없음");
-    return;
-  }
-
-  sizeGrid.innerHTML = "";
-
-  Object.keys(prices).forEach(size => {
-
-    const btn = document.createElement("button");
-    btn.textContent = size;
-    btn.className = "size-btn";
-
-    btn.onclick = function(){
-      document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      selectedSize = size;
-      updatePrice();
-    };
-
-    sizeGrid.appendChild(btn);
-
-  });
-
-  // 기본 선택
-  const firstBtn = document.querySelector(".size-btn");
-  if(firstBtn){
-    firstBtn.classList.add("active");
-    selectedSize = firstBtn.textContent;
-  }
-
-}
-
-// 페이지 로드 후 실행
-window.onload = function(){
-  createSizeButtons();
-  updatePrice();
-};
+<h2>1. 규격 선택</h2>
+<div class="size-grid" id="sizeGrid"></div>
 
 <h2>2. 길이 및 수량</h2>
 <div class="flex">
@@ -152,9 +107,9 @@ window.onload = function(){
 
 <script>
 
-// EmailJS 초기화 (본인 값으로 변경)
-emailjs.init("nL-iov_IIpUepMsqE");
-emailjs.send("service_e2myt4r", "template_urql7q9",
+// EmailJS 초기화 (본인 PublicKey로 변경)
+emailjs.init("YOUR_PUBLIC_KEY");
+
 // 기본 단가 (M 기준)
 const defaultPrices={
 2020:{silver:3900,black:6000},
@@ -169,7 +124,9 @@ let prices=JSON.parse(localStorage.getItem("profilePrices"))||defaultPrices;
 let selectedSize="2020";
 
 // 규격 버튼 생성
+function createSizeButtons(){
 const sizeGrid=document.getElementById("sizeGrid");
+sizeGrid.innerHTML="";
 Object.keys(prices).forEach(size=>{
 const btn=document.createElement("button");
 btn.textContent=size;
@@ -183,7 +140,9 @@ updatePrice();
 sizeGrid.appendChild(btn);
 });
 document.querySelector(".size-btn").classList.add("active");
+}
 
+// 가격 계산
 function updatePrice(){
 let color=document.getElementById("color").value;
 let length=parseInt(document.getElementById("length").value)||0;
@@ -202,9 +161,6 @@ total+=1000*(parseInt(counterQty.value)||0);
 price.textContent=total.toLocaleString()+" 원";
 previewImage.src="images/"+selectedSize+"_"+color+".png";
 }
-
-document.addEventListener("input",updatePrice);
-updatePrice();
 
 // 장바구니
 function addToCart(){
@@ -242,7 +198,6 @@ const doc = new jsPDF();
 doc.text("프로파일 견적서",20,20);
 let y=30;
 let total=0;
-
 document.querySelectorAll("#cartBody tr").forEach(row=>{
 const cells=row.querySelectorAll("td");
 let line=[cells[0].textContent,cells[1].textContent,cells[2].textContent,cells[3].textContent,cells[4].textContent,cells[5].textContent].join(" | ");
@@ -250,7 +205,6 @@ doc.text(line,20,y);
 y+=8;
 total+=parseInt(cells[5].textContent.replace(/,/g,''))||0;
 });
-
 y+=10;
 doc.text("총 합계: "+total.toLocaleString()+" 원",20,y);
 doc.save("견적서.pdf");
@@ -260,10 +214,8 @@ doc.save("견적서.pdf");
 function sendEmail(){
 let email=document.getElementById("customerEmail").value;
 if(!email){alert("이메일 입력");return;}
-
 let message="";
 let total=0;
-
 document.querySelectorAll("#cartBody tr").forEach(row=>{
 const cells=row.querySelectorAll("td");
 message+=cells[0].textContent+" / "+cells[5].textContent+"\n";
@@ -277,24 +229,50 @@ message:message
 }).then(()=>alert("메일 전송 완료"));
 }
 
-// 관리자 단가 수정
+// 관리자 단가 수정 (모달)
 function adminLogin(){
 const pw=prompt("비밀번호 입력");
-if(pw==="bandotec123"){
-let newPrice=prompt("예: 2020 silver 4500");
-if(!newPrice) return;
-let parts=newPrice.split(" ");
-if(parts.length===3){
-prices[parts[0]][parts[1]]=parseInt(parts[2]);
+if(pw!=="bandotec123") return alert("비밀번호 틀림");
+
+let panel=document.createElement("div");
+panel.style.position="fixed";
+panel.style.top="50%";
+panel.style.left="50%";
+panel.style.transform="translate(-50%,-50%)";
+panel.style.background="#fff";
+panel.style.padding="20px";
+panel.style.boxShadow="0 10px 30px rgba(0,0,0,0.3)";
+panel.style.zIndex="9999";
+
+let html="<h3>단가 수정</h3>";
+for(let s in prices){
+for(let c in prices[s]){
+html+=`${s} ${c} <input data-s="${s}" data-c="${c}" value="${prices[s][c]}"><br>`;
+}}
+html+="<button onclick='savePrices()'>저장</button>";
+html+="<button onclick='this.parentNode.remove()'>닫기</button>";
+panel.innerHTML=html;
+document.body.appendChild(panel);
+}
+
+function savePrices(){
+document.querySelectorAll("[data-s]").forEach(i=>{
+prices[i.dataset.s][i.dataset.c]=parseInt(i.value)||0;
+});
 localStorage.setItem("profilePrices",JSON.stringify(prices));
-alert("수정 완료");
+alert("저장 완료");
+document.querySelector("div[style*='fixed']").remove();
 updatePrice();
 }
-}
-}
+
+// 초기 실행
+window.onload=function(){
+createSizeButtons();
+updatePrice();
+};
+
+document.addEventListener("input",updatePrice);
 
 </script>
 </body>
 </html>
-
-
