@@ -79,8 +79,17 @@ button{padding:8px 12px;border:none;border-radius:6px;background:#2c3e70;color:#
 
 const supabaseClient = window.supabase.createClient(
   "https://uujjbrytvrkhctfpknol.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "여기에_본인_anon_key"
 );
+
+// 🔹 이메일 자동 발송 (Resend)
+async function sendEmail(orderNo,name,phone,total){
+await fetch("/api/send-email",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({orderNo,name,phone,total})
+});
+}
 
 const prices={
 2020:{silver:3900,black:6000},
@@ -182,9 +191,10 @@ if(!name||!phone){alert("고객명/연락처 입력");return;}
 let orderNo="BD-"+Date.now();
 
 await supabaseClient.from("quotes").insert([{
-order_no:orderNo,
-name,phone,email,total,status:"접수"
+order_no:orderNo,name,phone,email,total,status:"접수"
 }]);
+
+await sendEmail(orderNo,name,phone,total);
 
 document.getElementById("resultMsg").innerText="접수 완료! 주문번호: "+orderNo;
 }
