@@ -1,88 +1,3 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>프로파일 자동견적기</title>
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
-
-<style>
-body { font-family:Pretendard, sans-serif; background:#f4f6f9; padding:40px; }
-.container { max-width:1200px; margin:auto; background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.08); }
-h2 { margin-bottom:20px; }
-
-.lineItem { border:1px solid #ddd; border-radius:10px; padding:15px; margin-bottom:15px; }
-
-select,input { padding:8px; border:1px solid #ccc; border-radius:6px; }
-
-button { cursor:pointer; }
-
-.preview { margin-top:10px; text-align:center; }
-.preview img { max-width:150px; }
-
-.cart { margin-top:40px; }
-.cart table { width:100%; border-collapse:collapse; }
-.cart th, .cart td { border:1px solid #ddd; padding:8px; text-align:center; }
-.cart th { background:#f0f0f0; }
-
-.totalBox { font-size:1.6rem; font-weight:700; text-align:right; margin-top:20px; }
-</style>
-</head>
-
-<body>
-<div class="container">
-
-<h2>프로파일 자동견적기</h2>
-
-<div id="productLines"></div>
-
-<button onclick="addLine()" style="background:#3498db;color:#fff;padding:8px 14px;border:none;border-radius:6px;">+ 라인 추가</button>
-<button onclick="addToCart()" style="background:#2ecc71;color:#fff;padding:8px 14px;border:none;border-radius:6px;">장바구니 담기</button>
-
-<div class="preview">
-<img id="previewImage" src="" style="display:none;">
-</div>
-
-<div class="totalBox">현재 합계: <span id="currentTotal">0</span> 원</div>
-
-<!-- 장바구니 -->
-<div class="cart">
-<h3>장바구니</h3>
-<table>
-<thead>
-<tr>
-<th>규격</th><th>색상</th><th>수량</th><th>길이</th><th>가공</th><th>금액</th><th>삭제</th>
-</tr>
-</thead>
-<tbody id="cartBody"></tbody>
-</table>
-
-<div class="totalBox">총 합계: <span id="grandTotal">0</span> 원</div>
-
-<br>
-<input type="email" id="customerEmail" placeholder="받는사람 이메일">
-<button onclick="sendEmail()" style="background:#9b59b6;color:white;padding:8px 14px;border:none;border-radius:6px;">메일 전송</button>
-<button onclick="clearCart()" style="background:#e74c3c;color:white;padding:8px 14px;border:none;border-radius:6px;">전체 삭제</button>
-</div>
-
-</div>
-
-<script>
-
-// EmailJS 초기화
-emailjs.init("YOUR_PUBLIC_KEY");
-
-// 단가
-const defaultPrices = {
-  2020:{silver:3900,black:6000},
-  2040:{silver:6900,black:9000},
-  3030:{silver:8900,black:11000},
-  3060:{silver:14000,black:18000},
-  4040:{silver:16000,black:19000},
-  4080:{silver:28000,black:30000}
-};
-
-let prices = JSON.parse(localStorage.getItem("profilePrices")) || defaultPrices;
-
 function addLine(){
   const div=document.createElement("div");
   div.className="lineItem";
@@ -91,14 +6,21 @@ function addLine(){
     <select class="size">
       ${Object.keys(prices).map(s=>`<option value="${s}">${s}</option>`).join("")}
     </select>
+
     <select class="color">
       <option value="silver">실버</option>
       <option value="black">블랙</option>
     </select>
-    <input type="number" class="qty" value="1" min="1">
+
+    <!-- 🔥 길이 먼저 -->
     <input type="number" class="length" value="100" min="50" max="3000">
+
+    <!-- 🔥 수량 뒤로 -->
+    <input type="number" class="qty" value="1" min="1">
+
     <div class="lineTotal">0원</div>
   </div>
+
   <div style="margin-top:8px;">
     탭 <input type="number" class="tap" value="0" min="0" style="width:60px;">
     홀 <input type="number" class="hole" value="0" min="0" style="width:60px;">
@@ -107,83 +29,3 @@ function addLine(){
   `;
   document.getElementById("productLines").appendChild(div);
 }
-
-function calculate(){
-  let total=0;
-  document.querySelectorAll(".lineItem").forEach(line=>{
-    const s=line.querySelector(".size").value;
-    const c=line.querySelector(".color").value;
-    const q=parseInt(line.querySelector(".qty").value)||0;
-    const l=parseInt(line.querySelector(".length").value)||0;
-
-    if(l<50){ line.querySelector(".length").value=50; }
-    if(l>3000){ alert("3m 이상 배송불가"); line.querySelector(".length").value=3000; }
-
-    const base=(l/1000)*prices[s][c];
-    let lineTotal=Math.round(base/100)*100*q;
-
-    lineTotal+=300*(parseInt(line.querySelector(".tap").value)||0);
-    lineTotal+=400*(parseInt(line.querySelector(".hole").value)||0);
-    lineTotal+=1000*(parseInt(line.querySelector(".counter").value)||0);
-
-    line.querySelector(".lineTotal").textContent=lineTotal.toLocaleString()+"원";
-    total+=lineTotal;
-
-    document.getElementById("previewImage").src="images/"+s+"_"+c+".png";
-    document.getElementById("previewImage").style.display="block";
-  });
-  document.getElementById("currentTotal").textContent=total.toLocaleString();
-}
-
-document.addEventListener("input",calculate);
-
-function addToCart(){
-  document.querySelectorAll(".lineItem").forEach(line=>{
-    const row=document.createElement("tr");
-    row.innerHTML=`
-      <td>${line.querySelector(".size").value}</td>
-      <td>${line.querySelector(".color").value}</td>
-      <td>${line.querySelector(".qty").value}</td>
-      <td>${line.querySelector(".length").value}mm</td>
-      <td>탭:${line.querySelector(".tap").value}
-          홀:${line.querySelector(".hole").value}
-          카운터:${line.querySelector(".counter").value}</td>
-      <td>${line.querySelector(".lineTotal").textContent}</td>
-      <td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
-    `;
-    document.getElementById("cartBody").appendChild(row);
-  });
-  updateGrand();
-}
-
-function updateGrand(){
-  let g=0;
-  document.querySelectorAll("#cartBody tr").forEach(r=>{
-    g+=parseInt(r.children[5].textContent.replace(/,/g,''))||0;
-  });
-  document.getElementById("grandTotal").textContent=g.toLocaleString();
-}
-
-function clearCart(){
-  document.getElementById("cartBody").innerHTML="";
-  updateGrand();
-}
-
-function sendEmail(){
-  let message="";
-  document.querySelectorAll("#cartBody tr").forEach(r=>{
-    message+=Array.from(r.children).slice(0,6).map(td=>td.textContent).join(" | ")+"\n";
-  });
-
-  emailjs.send("YOUR_SERVICE_ID","YOUR_TEMPLATE_ID",{
-    to_email:document.getElementById("customerEmail").value,
-    message:message
-  }).then(()=>alert("메일 전송 완료"));
-}
-
-addLine();
-calculate();
-
-</script>
-</body>
-</html>
