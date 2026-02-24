@@ -153,8 +153,7 @@ background:#f7f9fc;border-radius:10px;
 <script>
 
 // EmailJS 초기화 (본인 값으로 변경)
-emailjs.init("YOUR_PUBLIC_KEY");
-
+emailjs.init("nL-iov_IIpUepMsqE");
 // 단가
 const defaultPrices={
 2020:{silver:3900,black:6000},
@@ -264,7 +263,7 @@ document.querySelectorAll("#cartBody tr").forEach(row=>{
 const cells=row.querySelectorAll("td");
 message+=cells[0].textContent+" / "+cells[5].textContent+"\n";
 });
-emailjs.init("nL-iov_IIpUepMsqE");
+
 emailjs.send("service_e2myt4r","template_urql7q9",{
 to_email:"jinu8732@naver.com",
 message:message
