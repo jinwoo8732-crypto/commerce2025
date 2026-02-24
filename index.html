@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
 <title>프로파일 자동견적기</title>
 
@@ -28,6 +29,75 @@ button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
 .primary{background:#2c3e70;color:#fff;}
 .danger{background:#e74c3c;color:#fff;}
 .admin-btn{position:fixed;bottom:20px;right:20px;background:#111;color:#fff;}
+
+/* =========================
+   📱 모바일 반응형 처리
+   ========================= */
+
+@media (max-width: 768px) {
+
+  body {
+    padding:15px;
+  }
+
+  .container {
+    padding:20px;
+  }
+
+  .size-grid {
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .flex-box {
+    flex-direction:column;
+    gap:20px;
+  }
+
+  .input-row {
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .input-row label {
+    width:100%;
+    margin-bottom:5px;
+  }
+
+  .cart table,
+  .cart thead,
+  .cart tbody,
+  .cart th,
+  .cart td,
+  .cart tr {
+    display:block;
+  }
+
+  .cart tr {
+    margin-bottom:15px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    padding:10px;
+  }
+
+  .cart td {
+    border:none;
+    text-align:left;
+    padding:5px 0;
+  }
+
+  .cart th {
+    display:none;
+  }
+
+  button {
+    width:100%;
+    margin-top:10px;
+  }
+
+}
+
+
+
 </style>
 </head>
 
@@ -278,4 +348,5 @@ function resetPrices(){
 </script>
 </body>
 </html>
+
 
