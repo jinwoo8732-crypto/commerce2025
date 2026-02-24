@@ -72,7 +72,8 @@ button{padding:8px 12px;border:none;border-radius:6px;background:#2c3e70;color:#
 
 <script>
 
-const supabase = window.supabase.createClient(
+// ✅ Supabase 연결 (한 번만 선언)
+const supabaseClient = window.supabase.createClient(
   "https://uujjbrytvrkhctfpknol.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1ampicnl0dnJraGN0ZnBrbm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4OTQ4MTIsImV4cCI6MjA4NzQ3MDgxMn0.rf1NdA5puP0CG-TA5nI_fwk3KhMN5QmxXH3P3xOIToo"
 );
@@ -132,7 +133,6 @@ document.getElementById("price").textContent=result.total.toLocaleString()+" 원
 document.addEventListener("input",updatePrice);
 
 function addToCart(){
-
 let colorValue=document.getElementById("color").value;
 let length=parseInt(document.getElementById("length").value)||0;
 let qty=parseInt(document.getElementById("qty").value)||0;
@@ -169,7 +169,6 @@ document.getElementById("grandTotal").textContent=g.toLocaleString();
 }
 
 async function submitQuote(){
-
 let name=document.getElementById("custName").value;
 let phone=document.getElementById("custPhone").value;
 let email=document.getElementById("custEmail").value;
@@ -185,7 +184,7 @@ let total=parseInt(document.getElementById("grandTotal").textContent.replace(/,/
 
 let orderNo="BD-"+Date.now();
 
-const { error }=await supabase.from("quotes").insert([{
+const { error }=await supabaseClient.from("quotes").insert([{
 order_no:orderNo,
 name:name,
 phone:phone,
@@ -201,13 +200,14 @@ console.log(error);
 }else{
 alert("접수 완료\n주문번호: "+orderNo);
 }
-
 }
 
-window.onload=function(){createSizeButtons();updatePrice();}
+window.onload=function(){
+createSizeButtons();
+updatePrice();
+};
 
 </script>
 
 </body>
 </html>
-
