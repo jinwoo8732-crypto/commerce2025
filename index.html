@@ -187,21 +187,95 @@ function clearCart(){
 cartBody.innerHTML="";
 updateGrand();
 }
+// ==========================
+// 🔐 관리자 단가 수정 시스템
+// ==========================
 
-// 관리자 기능
 function adminLogin(){
-const pw=prompt("비밀번호 입력");
-if(pw==="bandotec123"){
-let txt="";
-for(let s in prices){
-for(let c in prices[s]){
-txt+=`${s} ${c} : ${prices[s][c]}원\n`;
+  const pw = prompt("관리자 비밀번호 입력");
+  if(pw === "bandotec123"){
+    openAdminPanel();
+  }else{
+    alert("비밀번호가 틀렸습니다.");
+  }
 }
+
+function openAdminPanel(){
+
+  const panel = document.createElement("div");
+  panel.id = "adminPanel";
+  panel.style.position = "fixed";
+  panel.style.top = "50%";
+  panel.style.left = "50%";
+  panel.style.transform = "translate(-50%, -50%)";
+  panel.style.background = "#fff";
+  panel.style.padding = "25px";
+  panel.style.borderRadius = "15px";
+  panel.style.boxShadow = "0 10px 30px rgba(0,0,0,0.3)";
+  panel.style.zIndex = "9999";
+  panel.style.maxHeight = "80vh";
+  panel.style.overflow = "auto";
+  panel.style.width = "350px";
+
+  let html = "<h3>단가 수정 (M 기준)</h3><br>";
+
+  for(let size in prices){
+    html += `<strong>${size}</strong><br>`;
+    for(let color in prices[size]){
+      html += `
+        ${color} :
+        <input type="number"
+          data-size="${size}"
+          data-color="${color}"
+          value="${prices[size][color]}"
+          style="width:100px;margin-bottom:5px;">
+        원<br>
+      `;
+    }
+    html += "<br>";
+  }
+
+  html += `
+    <button onclick="savePrices()" style="margin-top:10px;">저장</button>
+    <button onclick="resetPrices()">기본값 복원</button>
+    <button onclick="closeAdmin()">닫기</button>
+  `;
+
+  panel.innerHTML = html;
+  document.body.appendChild(panel);
 }
-alert(txt+"\n(수정은 코드에서 가능)");
+
+function closeAdmin(){
+  const panel = document.getElementById("adminPanel");
+  if(panel) panel.remove();
 }
+
+function savePrices(){
+
+  document.querySelectorAll("#adminPanel input").forEach(input=>{
+    const size = input.dataset.size;
+    const color = input.dataset.color;
+    prices[size][color] = parseInt(input.value) || 0;
+  });
+
+  localStorage.setItem("profilePrices", JSON.stringify(prices));
+
+  alert("단가가 저장되었습니다.");
+  closeAdmin();
+  updatePrice();
+}
+
+function resetPrices(){
+  if(confirm("기본 단가로 복원하시겠습니까?")){
+    prices = JSON.parse(JSON.stringify(defaultPrices));
+    localStorage.setItem("profilePrices", JSON.stringify(prices));
+    alert("복원 완료");
+    closeAdmin();
+    updatePrice();
+  }
 }
 
 </script>
 </body>
 </html>
+
