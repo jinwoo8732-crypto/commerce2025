@@ -15,7 +15,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        from: "견적시스템 <onboarding@resend.dev>",
+        from: "onboarding@resend.dev",
         to: "jinu8732@naver.com",
         subject: `새 견적 접수 - ${orderNo}`,
         html: `
