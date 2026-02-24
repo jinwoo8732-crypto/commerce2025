@@ -43,8 +43,52 @@ button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;margin-top:
 <body>
 <div class="container">
 
-<h2>1. 규격 선택</h2>
-<div class="size-grid" id="sizeGrid"></div>
+// ==========================
+// 규격 버튼 생성 (안전버전)
+// ==========================
+
+function createSizeButtons(){
+
+  const sizeGrid = document.getElementById("sizeGrid");
+
+  if(!sizeGrid){
+    console.log("sizeGrid 없음");
+    return;
+  }
+
+  sizeGrid.innerHTML = "";
+
+  Object.keys(prices).forEach(size => {
+
+    const btn = document.createElement("button");
+    btn.textContent = size;
+    btn.className = "size-btn";
+
+    btn.onclick = function(){
+      document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedSize = size;
+      updatePrice();
+    };
+
+    sizeGrid.appendChild(btn);
+
+  });
+
+  // 기본 선택
+  const firstBtn = document.querySelector(".size-btn");
+  if(firstBtn){
+    firstBtn.classList.add("active");
+    selectedSize = firstBtn.textContent;
+  }
+
+}
+
+// 페이지 로드 후 실행
+window.onload = function(){
+  createSizeButtons();
+  updatePrice();
+};
 
 <h2>2. 길이 및 수량</h2>
 <div class="flex">
@@ -252,4 +296,5 @@ updatePrice();
 </script>
 </body>
 </html>
+
 
