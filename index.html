@@ -72,13 +72,13 @@ button{padding:8px 12px;border:none;border-radius:6px;background:#2c3e70;color:#
 
 <script>
 
-// 🔹 Supabase 연결
+// ✅ Supabase 연결 (실제 키 적용됨)
 const supabase = window.supabase.createClient(
   "https://uujjbrytvrkhctfpknol.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1ampicnl0dnJraGN0ZnBrbm9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4OTQ4MTIsImV4cCI6MjA4NzQ3MDgxMn0.rf1NdA5puP0CG-TA5nI_fwk3KhMN5QmxXH3P3xOIToo"
 );
 
-// 🔹 단가표
+// 단가표
 const prices={
 2020:{silver:3900,black:6000},
 2040:{silver:6900,black:9000},
@@ -119,34 +119,35 @@ return {total,calculatedLength:unit100*100};
 }
 
 function updatePrice(){
-let color=document.getElementById("color").value;
+let colorValue=document.getElementById("color").value;
 let length=parseInt(document.getElementById("length").value)||0;
 let qty=parseInt(document.getElementById("qty").value)||0;
-let tap=parseInt(tapQty.value)||0;
-let hole=parseInt(holeQty.value)||0;
-let counter=parseInt(counterQty.value)||0;
+let tap=parseInt(document.getElementById("tapQty").value)||0;
+let hole=parseInt(document.getElementById("holeQty").value)||0;
+let counter=parseInt(document.getElementById("counterQty").value)||0;
 
-let result=calculateLine(selectedSize,color,length,qty,tap,hole,counter);
-price.textContent=result.total.toLocaleString()+" 원";
+let result=calculateLine(selectedSize,colorValue,length,qty,tap,hole,counter);
+document.getElementById("price").textContent=result.total.toLocaleString()+" 원";
 }
 
 document.addEventListener("input",updatePrice);
 
 function addToCart(){
-let colorValue = document.getElementById("color").value;
+
+let colorValue=document.getElementById("color").value;
 let length=parseInt(document.getElementById("length").value)||0;
 let qty=parseInt(document.getElementById("qty").value)||0;
-let tap=parseInt(tapQty.value)||0;
-let hole=parseInt(holeQty.value)||0;
-let counter=parseInt(counterQty.value)||0;
+let tap=parseInt(document.getElementById("tapQty").value)||0;
+let hole=parseInt(document.getElementById("holeQty").value)||0;
+let counter=parseInt(document.getElementById("counterQty").value)||0;
 
-let result=calculateLine(selectedSize,color,length,qty,tap,hole,counter);
+let result=calculateLine(selectedSize,colorValue,length,qty,tap,hole,counter);
 
 const row=document.createElement("tr");
 
 row.innerHTML=`
 <td>${selectedSize}</td>
-<td>${color}</td>
+<td>${colorValue}</td>
 <td>${result.calculatedLength}</td>
 <td>${qty}</td>
 <td>${tap}</td>
@@ -156,7 +157,7 @@ row.innerHTML=`
 <td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
 `;
 
-cartBody.appendChild(row);
+document.getElementById("cartBody").appendChild(row);
 updateGrand();
 }
 
@@ -165,19 +166,14 @@ let g=0;
 document.querySelectorAll(".linePrice").forEach(cell=>{
 g+=parseInt(cell.textContent.replace(/,/g,''))||0;
 });
-grandTotal.textContent=g.toLocaleString();
-}
-
-async function generateOrderNo(){
-const { data } = await supabase.from("quotes").select("id");
-return "BD-"+Date.now();
+document.getElementById("grandTotal").textContent=g.toLocaleString();
 }
 
 async function submitQuote(){
 
-let name=custName.value;
-let phone=custPhone.value;
-let email=custEmail.value;
+let name=document.getElementById("custName").value;
+let phone=document.getElementById("custPhone").value;
+let email=document.getElementById("custEmail").value;
 
 if(!name||!phone){alert("고객명/연락처 입력");return;}
 
@@ -186,9 +182,9 @@ document.querySelectorAll("#cartBody tr").forEach(row=>{
 items.push(row.innerText);
 });
 
-let total=parseInt(grandTotal.textContent.replace(/,/g,''))||0;
+let total=parseInt(document.getElementById("grandTotal").textContent.replace(/,/g,''))||0;
 
-let orderNo=await generateOrderNo();
+let orderNo="BD-"+Date.now();
 
 const { error }=await supabase.from("quotes").insert([{
 order_no:orderNo,
@@ -215,4 +211,3 @@ window.onload=function(){createSizeButtons();updatePrice();}
 
 </body>
 </html>
-
