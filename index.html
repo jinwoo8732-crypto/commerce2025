@@ -1,106 +1,43 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>프로파일 자동견적기</title>
 
+<!-- EmailJS -->
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
-body{font-family:Arial;background:#f2f4f8;padding:40px;}
-.container{max-width:1200px;margin:auto;background:#fff;padding:40px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,0.08);}
-h2{margin-bottom:20px;}
-.step{margin-top:40px;font-weight:bold;font-size:18px;}
-.size-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:15px;}
-.size-btn{padding:15px;border:none;border-radius:10px;background:#eef1f6;cursor:pointer;font-size:16px;}
+body{font-family:Arial;background:#f2f4f8;margin:0;padding:20px;}
+.container{max-width:1100px;margin:auto;background:#fff;padding:30px;border-radius:15px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
+h2{margin-top:30px;}
+.size-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.size-btn{padding:12px;border:none;border-radius:8px;background:#e9ecf2;cursor:pointer;}
 .size-btn.active{background:#2c3e70;color:#fff;}
-.flex-box{display:flex;gap:40px;margin-top:20px;}
-.left-img img{max-width:100%;}
-.input-row{display:flex;align-items:center;margin-bottom:15px;}
-.input-row label{width:80px;}
-.input-row input,.input-row select{flex:1;padding:8px;border-radius:8px;border:1px solid #ccc;}
-.price-box{font-size:20px;color:#e74c3c;font-weight:bold;}
-.option-row{margin-top:10px;}
-.cart{margin-top:40px;}
-.cart table{width:100%;border-collapse:collapse;}
-.cart th,.cart td{border:1px solid #ddd;padding:8px;text-align:center;}
+.flex{display:flex;gap:30px;flex-wrap:wrap;}
+.left img{max-width:100%;}
+.input-row{margin-bottom:10px;}
+.input-row label{display:block;margin-bottom:5px;}
+input,select{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;}
+.price{font-size:20px;color:#e74c3c;font-weight:bold;margin-top:10px;}
+button{padding:8px 12px;border:none;border-radius:6px;cursor:pointer;margin-top:5px;}
+.primary{background:#2c3e70;color:white;}
+.danger{background:#e74c3c;color:white;}
+.cart table{width:100%;border-collapse:collapse;margin-top:20px;}
+.cart th,.cart td{border:1px solid #ddd;padding:6px;text-align:center;}
 .cart th{background:#f0f0f0;}
-.total{font-size:18px;font-weight:bold;text-align:right;margin-top:15px;}
-button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
-.primary{background:#2c3e70;color:#fff;}
-.danger{background:#e74c3c;color:#fff;}
+.total{text-align:right;font-weight:bold;margin-top:10px;}
 .admin-btn{position:fixed;bottom:20px;right:20px;background:#111;color:#fff;}
 
-/* =========================
-   📱 모바일 반응형 처리
-   ========================= */
-
-@media (max-width: 768px) {
-
-  body {
-    padding:15px;
-  }
-
-  .container {
-    padding:20px;
-  }
-
-  .size-grid {
-    grid-template-columns:repeat(2,1fr);
-  }
-
-  .flex-box {
-    flex-direction:column;
-    gap:20px;
-  }
-
-  .input-row {
-    flex-direction:column;
-    align-items:flex-start;
-  }
-
-  .input-row label {
-    width:100%;
-    margin-bottom:5px;
-  }
-
-  .cart table,
-  .cart thead,
-  .cart tbody,
-  .cart th,
-  .cart td,
-  .cart tr {
-    display:block;
-  }
-
-  .cart tr {
-    margin-bottom:15px;
-    border:1px solid #ddd;
-    border-radius:10px;
-    padding:10px;
-  }
-
-  .cart td {
-    border:none;
-    text-align:left;
-    padding:5px 0;
-  }
-
-  .cart th {
-    display:none;
-  }
-
-  button {
-    width:100%;
-    margin-top:10px;
-  }
-
+@media(max-width:768px){
+.size-grid{grid-template-columns:repeat(2,1fr);}
+.flex{flex-direction:column;}
 }
-
-
-
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-   
 </head>
 
 <body>
@@ -109,13 +46,12 @@ button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
 <h2>1. 규격 선택</h2>
 <div class="size-grid" id="sizeGrid"></div>
 
-<div class="step">2. 길이 및 수량</div>
-<div class="flex-box">
-<div class="left-img">
+<h2>2. 길이 및 수량</h2>
+<div class="flex">
+<div class="left">
 <img id="previewImage">
 </div>
-
-<div style="flex:1;">
+<div class="right">
 <div class="input-row">
 <label>색상</label>
 <select id="color">
@@ -125,9 +61,8 @@ button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
 </div>
 
 <div class="input-row">
-<label>길이</label>
+<label>길이(mm)</label>
 <input type="number" id="length" value="100" min="50">
-<span style="margin-left:10px;">mm</span>
 </div>
 
 <div class="input-row">
@@ -135,28 +70,20 @@ button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
 <input type="number" id="qty" value="1" min="1">
 </div>
 
-<div class="input-row">
-<label>금액</label>
-<div class="price-box" id="price">0 원</div>
-</div>
-
+<div class="price" id="price">0 원</div>
 </div>
 </div>
 
-<div class="step">3. 가공 옵션</div>
+<h2>3. 가공 옵션</h2>
+탭 <input type="number" id="tapQty" value="0" min="0" style="width:70px;">
+홀 <input type="number" id="holeQty" value="0" min="0" style="width:70px;">
+카운터 <input type="number" id="counterQty" value="0" min="0" style="width:70px;">
 
-<div class="option-row">
-탭가공 <input type="number" id="tapQty" value="0" min="0" style="width:70px;">
-홀가공 <input type="number" id="holeQty" value="0" min="0" style="width:70px;">
-카운터보어 <input type="number" id="counterQty" value="0" min="0" style="width:70px;">
-</div>
-
-<br>
+<br><br>
 <button class="primary" onclick="addToCart()">제품담기</button>
 
 <div class="cart">
-<h3>장바구니</h3>
-   
+<h2>장바구니</h2>
 <table>
 <thead>
 <tr>
@@ -168,8 +95,11 @@ button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
 
 <div class="total">총 합계: <span id="grandTotal">0</span> 원</div>
 
+<input type="email" id="customerEmail" placeholder="받는사람 이메일">
+<br>
+<button onclick="sendEmail()">메일 전송</button>
+<button onclick="generatePDF()">PDF 저장</button>
 <button class="danger" onclick="clearCart()">전체삭제</button>
-   <button onclick="generatePDF()">PDF 저장</button>
 </div>
 
 </div>
@@ -177,6 +107,9 @@ button{padding:8px 15px;border:none;border-radius:8px;cursor:pointer;}
 <button class="admin-btn" onclick="adminLogin()">관리자</button>
 
 <script>
+
+// EmailJS 초기화 (본인 값으로 변경)
+emailjs.init("YOUR_PUBLIC_KEY");
 
 // 기본 단가 (M 기준)
 const defaultPrices={
@@ -189,11 +122,10 @@ const defaultPrices={
 };
 
 let prices=JSON.parse(localStorage.getItem("profilePrices"))||defaultPrices;
-
 let selectedSize="2020";
 
+// 규격 버튼 생성
 const sizeGrid=document.getElementById("sizeGrid");
-
 Object.keys(prices).forEach(size=>{
 const btn=document.createElement("button");
 btn.textContent=size;
@@ -206,34 +138,31 @@ updatePrice();
 };
 sizeGrid.appendChild(btn);
 });
-
 document.querySelector(".size-btn").classList.add("active");
 
 function updatePrice(){
-
 let color=document.getElementById("color").value;
 let length=parseInt(document.getElementById("length").value)||0;
 let qty=parseInt(document.getElementById("qty").value)||0;
 
-if(length<50){length=50;}
+if(length<50) length=50;
 
-let unit100=Math.ceil(length/100); // 🔥 100mm 단위 올림
-let base100=(prices[selectedSize][color]/10); // M단가 → 100mm단가
-let base=unit100*base100;
+let unit100=Math.ceil(length/100);
+let base100=prices[selectedSize][color]/10;
+let total=unit100*base100*qty;
 
-let total=base*qty;
+total+=300*(parseInt(tapQty.value)||0);
+total+=400*(parseInt(holeQty.value)||0);
+total+=1000*(parseInt(counterQty.value)||0);
 
-total+=300*(parseInt(document.getElementById("tapQty").value)||0);
-total+=400*(parseInt(document.getElementById("holeQty").value)||0);
-total+=1000*(parseInt(document.getElementById("counterQty").value)||0);
-
-document.getElementById("price").textContent=total.toLocaleString()+" 원";
-document.getElementById("previewImage").src="images/"+selectedSize+"_"+color+".png";
+price.textContent=total.toLocaleString()+" 원";
+previewImage.src="images/"+selectedSize+"_"+color+".png";
 }
 
 document.addEventListener("input",updatePrice);
 updatePrice();
 
+// 장바구니
 function addToCart(){
 const row=document.createElement("tr");
 row.innerHTML=`
@@ -261,145 +190,65 @@ function clearCart(){
 cartBody.innerHTML="";
 updateGrand();
 }
-// ==========================
-// 🔐 관리자 단가 수정 시스템
-// ==========================
 
+// PDF 생성
+function generatePDF(){
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+doc.text("프로파일 견적서",20,20);
+let y=30;
+let total=0;
+
+document.querySelectorAll("#cartBody tr").forEach(row=>{
+const cells=row.querySelectorAll("td");
+let line=[cells[0].textContent,cells[1].textContent,cells[2].textContent,cells[3].textContent,cells[4].textContent,cells[5].textContent].join(" | ");
+doc.text(line,20,y);
+y+=8;
+total+=parseInt(cells[5].textContent.replace(/,/g,''))||0;
+});
+
+y+=10;
+doc.text("총 합계: "+total.toLocaleString()+" 원",20,y);
+doc.save("견적서.pdf");
+}
+
+// 메일 전송
+function sendEmail(){
+let email=document.getElementById("customerEmail").value;
+if(!email){alert("이메일 입력");return;}
+
+let message="";
+let total=0;
+
+document.querySelectorAll("#cartBody tr").forEach(row=>{
+const cells=row.querySelectorAll("td");
+message+=cells[0].textContent+" / "+cells[5].textContent+"\n";
+total+=parseInt(cells[5].textContent.replace(/,/g,''))||0;
+});
+message+="총합계: "+total.toLocaleString()+" 원";
+
+emailjs.send("YOUR_SERVICE_ID","YOUR_TEMPLATE_ID",{
+to_email:email,
+message:message
+}).then(()=>alert("메일 전송 완료"));
+}
+
+// 관리자 단가 수정
 function adminLogin(){
-  const pw = prompt("관리자 비밀번호 입력");
-  if(pw === "bandotec123"){
-    openAdminPanel();
-  }else{
-    alert("비밀번호가 틀렸습니다.");
-  }
+const pw=prompt("비밀번호 입력");
+if(pw==="bandotec123"){
+let newPrice=prompt("예: 2020 silver 4500");
+if(!newPrice) return;
+let parts=newPrice.split(" ");
+if(parts.length===3){
+prices[parts[0]][parts[1]]=parseInt(parts[2]);
+localStorage.setItem("profilePrices",JSON.stringify(prices));
+alert("수정 완료");
+updatePrice();
+}
+}
 }
 
-function openAdminPanel(){
-
-  const panel = document.createElement("div");
-  panel.id = "adminPanel";
-  panel.style.position = "fixed";
-  panel.style.top = "50%";
-  panel.style.left = "50%";
-  panel.style.transform = "translate(-50%, -50%)";
-  panel.style.background = "#fff";
-  panel.style.padding = "25px";
-  panel.style.borderRadius = "15px";
-  panel.style.boxShadow = "0 10px 30px rgba(0,0,0,0.3)";
-  panel.style.zIndex = "9999";
-  panel.style.maxHeight = "80vh";
-  panel.style.overflow = "auto";
-  panel.style.width = "350px";
-
-  let html = "<h3>단가 수정 (M 기준)</h3><br>";
-
-  for(let size in prices){
-    html += `<strong>${size}</strong><br>`;
-    for(let color in prices[size]){
-      html += `
-        ${color} :
-        <input type="number"
-          data-size="${size}"
-          data-color="${color}"
-          value="${prices[size][color]}"
-          style="width:100px;margin-bottom:5px;">
-        원<br>
-      `;
-    }
-    html += "<br>";
-  }
-
-  html += `
-    <button onclick="savePrices()" style="margin-top:10px;">저장</button>
-    <button onclick="resetPrices()">기본값 복원</button>
-    <button onclick="closeAdmin()">닫기</button>
-  `;
-
-  panel.innerHTML = html;
-  document.body.appendChild(panel);
-}
-
-function closeAdmin(){
-  const panel = document.getElementById("adminPanel");
-  if(panel) panel.remove();
-}
-
-function savePrices(){
-
-  document.querySelectorAll("#adminPanel input").forEach(input=>{
-    const size = input.dataset.size;
-    const color = input.dataset.color;
-    prices[size][color] = parseInt(input.value) || 0;
-  });
-
-  localStorage.setItem("profilePrices", JSON.stringify(prices));
-
-  alert("단가가 저장되었습니다.");
-  closeAdmin();
-  updatePrice();
-}
-
-function resetPrices(){
-  if(confirm("기본 단가로 복원하시겠습니까?")){
-    prices = JSON.parse(JSON.stringify(defaultPrices));
-    localStorage.setItem("profilePrices", JSON.stringify(prices));
-    alert("복원 완료");
-    closeAdmin();
-    updatePrice();
-  }
-}
-
-   // =========================
-// 📄 PDF 생성 기능
-// =========================
-
-async function generatePDF(){
-
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  doc.setFontSize(16);
-  doc.text("프로파일 견적서", 20, 20);
-
-  doc.setFontSize(11);
-
-  let y = 35;
-
-  // 테이블 헤더
-  doc.text("규격 | 색상 | 길이 | 수량 | 가공 | 금액", 20, y);
-  y += 8;
-
-  let grandTotal = 0;
-
-  document.querySelectorAll("#cartBody tr").forEach(row=>{
-
-    const cells = row.querySelectorAll("td");
-
-    const lineText = [
-      cells[0].textContent,
-      cells[1].textContent,
-      cells[2].textContent,
-      cells[3].textContent,
-      cells[4].textContent,
-      cells[5].textContent
-    ].join(" | ");
-
-    doc.text(lineText, 20, y);
-    y += 8;
-
-    grandTotal += parseInt(cells[5].textContent.replace(/,/g,'')) || 0;
-
-  });
-
-  y += 10;
-  doc.setFontSize(13);
-  doc.text("총 합계: " + grandTotal.toLocaleString() + " 원", 20, y);
-
-  doc.save("견적서.pdf");
-}
 </script>
 </body>
 </html>
-
-
-
