@@ -7,41 +7,37 @@
 </head>
 <body>
 
-<h2>관리자 견적 목록</h2>
+<h2>관리자 견적 관리</h2>
 <div id="list"></div>
 
 <script>
 
 const supabase = window.supabase.createClient(
   "https://uujjbrytvrkhctfpknol.supabase.co",
-  "YOUR_ANON_KEY"
+  "여기에_anon_public_key_그대로_넣기"
 );
 
 async function loadQuotes(){
-  const { data } = await supabase
-    .from("quotes")
-    .select("*")
-    .order("created_at",{ascending:false});
+const { data }=await supabase.from("quotes").select("*").order("created_at",{ascending:false});
+const container=document.getElementById("list");
+container.innerHTML="";
 
-  const container = document.getElementById("list");
-
-  data.forEach(q=>{
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <hr>
-      주문번호: ${q.order_no}<br>
-      고객명: ${q.name}<br>
-      연락처: ${q.phone}<br>
-      항목: ${q.items}<br>
-      상태: ${q.status}
-    `;
-    container.appendChild(div);
-  });
+data.forEach(q=>{
+const div=document.createElement("div");
+div.innerHTML=`
+<hr>
+주문번호: ${q.order_no}<br>
+고객명: ${q.name}<br>
+연락처: ${q.phone}<br>
+총금액: ${q.total}원<br>
+상태: ${q.status}
+`;
+container.appendChild(div);
+});
 }
 
 loadQuotes();
 
 </script>
-
 </body>
 </html>
