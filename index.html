@@ -3,44 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <title>프로파일 자동견적기</title>
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 
 <style>
-body {
-  font-family: Pretendard, sans-serif;
-  background:#f5f6fa;
-  padding:40px;
-}
-.container {
-  max-width:1200px;
-  margin:auto;
-  background:white;
-  padding:30px;
-  border-radius:15px;
-  box-shadow:0 5px 20px rgba(0,0,0,0.08);
-}
+body { font-family:Pretendard, sans-serif; background:#f4f6f9; padding:40px; }
+.container { max-width:1200px; margin:auto; background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.08); }
 h2 { margin-bottom:20px; }
 
-.lineItem {
-  border:1px solid #ddd;
-  border-radius:10px;
-  padding:15px;
-  margin-bottom:15px;
-}
+.lineItem { border:1px solid #ddd; border-radius:10px; padding:15px; margin-bottom:15px; }
 
-select,input {
-  padding:8px;
-  border:1px solid #ccc;
-  border-radius:6px;
-}
+select,input { padding:8px; border:1px solid #ccc; border-radius:6px; }
 
 button { cursor:pointer; }
 
-.totalBox {
-  font-size:1.6rem;
-  font-weight:700;
-  text-align:right;
-  margin-top:25px;
-}
+.preview { margin-top:10px; text-align:center; }
+.preview img { max-width:150px; }
+
+.cart { margin-top:40px; }
+.cart table { width:100%; border-collapse:collapse; }
+.cart th, .cart td { border:1px solid #ddd; padding:8px; text-align:center; }
+.cart th { background:#f0f0f0; }
+
+.totalBox { font-size:1.6rem; font-weight:700; text-align:right; margin-top:20px; }
 </style>
 </head>
 
@@ -51,223 +35,154 @@ button { cursor:pointer; }
 
 <div id="productLines"></div>
 
-<button onclick="addLine()" 
-        style="background:#3498db;color:white;padding:8px 14px;border:none;border-radius:6px;">
-+ 라인 추가
-</button>
+<button onclick="addLine()" style="background:#3498db;color:#fff;padding:8px 14px;border:none;border-radius:6px;">+ 라인 추가</button>
+<button onclick="addToCart()" style="background:#2ecc71;color:#fff;padding:8px 14px;border:none;border-radius:6px;">장바구니 담기</button>
 
-<div class="totalBox">
-총 합계: <span id="grandTotal">0</span> 원
+<div class="preview">
+<img id="previewImage" src="" style="display:none;">
 </div>
 
+<div class="totalBox">현재 합계: <span id="currentTotal">0</span> 원</div>
+
+<!-- 장바구니 -->
+<div class="cart">
+<h3>장바구니</h3>
+<table>
+<thead>
+<tr>
+<th>규격</th><th>색상</th><th>수량</th><th>길이</th><th>가공</th><th>금액</th><th>삭제</th>
+</tr>
+</thead>
+<tbody id="cartBody"></tbody>
+</table>
+
+<div class="totalBox">총 합계: <span id="grandTotal">0</span> 원</div>
+
+<br>
+<input type="email" id="customerEmail" placeholder="받는사람 이메일">
+<button onclick="sendEmail()" style="background:#9b59b6;color:white;padding:8px 14px;border:none;border-radius:6px;">메일 전송</button>
+<button onclick="clearCart()" style="background:#e74c3c;color:white;padding:8px 14px;border:none;border-radius:6px;">전체 삭제</button>
 </div>
 
-<!-- 관리자 버튼 -->
-<button onclick="adminLogin()" 
-        style="position:fixed;bottom:20px;right:20px;
-               background:#2d3436;color:white;
-               padding:8px 12px;border:none;border-radius:6px;">
-관리자
-</button>
-
-<!-- 관리자 패널 -->
-<div id="adminPanel" style="display:none;
-     position:fixed;top:50%;left:50%;
-     transform:translate(-50%,-50%);
-     background:white;padding:20px;
-     border-radius:10px;
-     box-shadow:0 10px 30px rgba(0,0,0,0.2);
-     max-height:80vh;overflow:auto;min-width:300px;">
-
-  <h3>단가 수정</h3>
-  <div id="priceEditor"></div>
-  <br>
-  <button onclick="savePrices()" style="background:#27ae60;color:white;padding:6px 12px;border:none;border-radius:6px;">저장</button>
-  <button onclick="resetPrices()" style="background:#f39c12;color:white;padding:6px 12px;border:none;border-radius:6px;">기본값 복원</button>
-  <button onclick="closeAdmin()" style="background:#e74c3c;color:white;padding:6px 12px;border:none;border-radius:6px;">닫기</button>
 </div>
 
 <script>
 
-// 🔥 기본 단가
+// EmailJS 초기화
+emailjs.init("YOUR_PUBLIC_KEY");
+
+// 단가
 const defaultPrices = {
-  2020: { silver: 3900, black: 6000 },
-  2040: { silver: 6900, black: 9000 },
-  3030: { silver: 8900, black: 11000 },
-  3060: { silver: 14000, black: 18000 },
-  4040: { silver: 16000, black: 19000 },
-  4080: { silver: 28000, black: 30000 }
+  2020:{silver:3900,black:6000},
+  2040:{silver:6900,black:9000},
+  3030:{silver:8900,black:11000},
+  3060:{silver:14000,black:18000},
+  4040:{silver:16000,black:19000},
+  4080:{silver:28000,black:30000}
 };
 
-// 저장된 단가 불러오기
 let prices = JSON.parse(localStorage.getItem("profilePrices")) || defaultPrices;
 
-function addLine() {
-
-  const line = document.createElement("div");
-  line.className = "lineItem";
-
-  line.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;align-items:center;">
-      <select class="lineSize">
-        ${Object.keys(prices).map(size => `<option value="${size}">${size}</option>`).join("")}
-      </select>
-
-      <select class="lineColor">
-        <option value="silver">실버</option>
-        <option value="black">블랙</option>
-      </select>
-
-      <input type="number" class="lineQty" value="1" min="1">
-      <input type="number" class="lineLength" value="100" min="50" max="3000">
-
-      <div class="lineTotal" style="font-weight:700;text-align:right;">0원</div>
-    </div>
-
-    <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:center;">
-      <label><input type="checkbox" class="tapCheck"> 탭</label>
-      <input type="number" class="tapQty" value="0" min="0" style="width:70px;">
-
-      <label><input type="checkbox" class="holeCheck"> 홀</label>
-      <input type="number" class="holeQty" value="0" min="0" style="width:70px;">
-
-      <label><input type="checkbox" class="counterCheck"> 카운터보어</label>
-      <input type="number" class="counterQty" value="0" min="0" style="width:70px;">
-
-      <button onclick="this.closest('.lineItem').remove(); calculateAllLines();"
-              style="background:#e74c3c;color:white;border:none;border-radius:6px;padding:4px 10px;">
-        삭제
-      </button>
-    </div>
+function addLine(){
+  const div=document.createElement("div");
+  div.className="lineItem";
+  div.innerHTML=`
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:10px;">
+    <select class="size">
+      ${Object.keys(prices).map(s=>`<option value="${s}">${s}</option>`).join("")}
+    </select>
+    <select class="color">
+      <option value="silver">실버</option>
+      <option value="black">블랙</option>
+    </select>
+    <input type="number" class="qty" value="1" min="1">
+    <input type="number" class="length" value="100" min="50" max="3000">
+    <div class="lineTotal">0원</div>
+  </div>
+  <div style="margin-top:8px;">
+    탭 <input type="number" class="tap" value="0" min="0" style="width:60px;">
+    홀 <input type="number" class="hole" value="0" min="0" style="width:60px;">
+    카운터보어 <input type="number" class="counter" value="0" min="0" style="width:60px;">
+  </div>
   `;
-
-  document.getElementById("productLines").appendChild(line);
+  document.getElementById("productLines").appendChild(div);
 }
 
-function calculateAllLines() {
+function calculate(){
+  let total=0;
+  document.querySelectorAll(".lineItem").forEach(line=>{
+    const s=line.querySelector(".size").value;
+    const c=line.querySelector(".color").value;
+    const q=parseInt(line.querySelector(".qty").value)||0;
+    const l=parseInt(line.querySelector(".length").value)||0;
 
-  let grandTotal = 0;
+    if(l<50){ line.querySelector(".length").value=50; }
+    if(l>3000){ alert("3m 이상 배송불가"); line.querySelector(".length").value=3000; }
 
-  document.querySelectorAll(".lineItem").forEach(line => {
+    const base=(l/1000)*prices[s][c];
+    let lineTotal=Math.round(base/100)*100*q;
 
-    const size = line.querySelector(".lineSize").value;
-    const color = line.querySelector(".lineColor").value;
-    const qty = parseInt(line.querySelector(".lineQty").value) || 0;
-    const length = parseInt(line.querySelector(".lineLength").value) || 0;
+    lineTotal+=300*(parseInt(line.querySelector(".tap").value)||0);
+    lineTotal+=400*(parseInt(line.querySelector(".hole").value)||0);
+    lineTotal+=1000*(parseInt(line.querySelector(".counter").value)||0);
 
-    if (length < 50) {
-      line.querySelector(".lineLength").value = 50;
-      return;
-    }
+    line.querySelector(".lineTotal").textContent=lineTotal.toLocaleString()+"원";
+    total+=lineTotal;
 
-    if (length > 3000) {
-      alert("3m 이상은 배송이 불가능합니다.");
-      line.querySelector(".lineLength").value = 3000;
-      return;
-    }
+    document.getElementById("previewImage").src="images/"+s+"_"+c+".png";
+    document.getElementById("previewImage").style.display="block";
+  });
+  document.getElementById("currentTotal").textContent=total.toLocaleString();
+}
 
-    const baseUnit = prices[size][color];
-    const meterPrice = (length / 1000) * baseUnit;
-    const rounded = Math.round(meterPrice / 100) * 100;
+document.addEventListener("input",calculate);
 
-    let lineTotal = rounded * qty;
+function addToCart(){
+  document.querySelectorAll(".lineItem").forEach(line=>{
+    const row=document.createElement("tr");
+    row.innerHTML=`
+      <td>${line.querySelector(".size").value}</td>
+      <td>${line.querySelector(".color").value}</td>
+      <td>${line.querySelector(".qty").value}</td>
+      <td>${line.querySelector(".length").value}mm</td>
+      <td>탭:${line.querySelector(".tap").value}
+          홀:${line.querySelector(".hole").value}
+          카운터:${line.querySelector(".counter").value}</td>
+      <td>${line.querySelector(".lineTotal").textContent}</td>
+      <td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
+    `;
+    document.getElementById("cartBody").appendChild(row);
+  });
+  updateGrand();
+}
 
-    if (line.querySelector(".tapCheck").checked)
-      lineTotal += 300 * (parseInt(line.querySelector(".tapQty").value) || 0);
+function updateGrand(){
+  let g=0;
+  document.querySelectorAll("#cartBody tr").forEach(r=>{
+    g+=parseInt(r.children[5].textContent.replace(/,/g,''))||0;
+  });
+  document.getElementById("grandTotal").textContent=g.toLocaleString();
+}
 
-    if (line.querySelector(".holeCheck").checked)
-      lineTotal += 400 * (parseInt(line.querySelector(".holeQty").value) || 0);
+function clearCart(){
+  document.getElementById("cartBody").innerHTML="";
+  updateGrand();
+}
 
-    if (line.querySelector(".counterCheck").checked)
-      lineTotal += 1000 * (parseInt(line.querySelector(".counterQty").value) || 0);
-
-    line.querySelector(".lineTotal").textContent =
-      lineTotal.toLocaleString() + "원";
-
-    grandTotal += lineTotal;
+function sendEmail(){
+  let message="";
+  document.querySelectorAll("#cartBody tr").forEach(r=>{
+    message+=Array.from(r.children).slice(0,6).map(td=>td.textContent).join(" | ")+"\n";
   });
 
-  document.getElementById("grandTotal").textContent =
-    grandTotal.toLocaleString();
+  emailjs.send("YOUR_SERVICE_ID","YOUR_TEMPLATE_ID",{
+    to_email:document.getElementById("customerEmail").value,
+    message:message
+  }).then(()=>alert("메일 전송 완료"));
 }
-
-document.addEventListener("input", function(e) {
-  if (e.target.closest(".lineItem")) {
-    calculateAllLines();
-  }
-});
 
 addLine();
-calculateAllLines();
-
-// 관리자 기능
-function adminLogin() {
-  const pw = prompt("관리자 비밀번호 입력");
-  if (pw === "bandotec123") openAdmin();
-  else alert("비밀번호가 틀렸습니다.");
-}
-
-function openAdmin() {
-
-  const editor = document.getElementById("priceEditor");
-  editor.innerHTML = "";
-
-  for (let size in prices) {
-    for (let color in prices[size]) {
-
-      const row = document.createElement("div");
-      row.style.marginBottom = "8px";
-
-      row.innerHTML = `
-        ${size} ${color} :
-        <input type="number"
-               data-size="${size}"
-               data-color="${color}"
-               value="${prices[size][color]}"
-               style="width:100px;"> 원
-      `;
-
-      editor.appendChild(row);
-    }
-  }
-
-  document.getElementById("adminPanel").style.display = "block";
-}
-
-function closeAdmin() {
-  document.getElementById("adminPanel").style.display = "none";
-}
-
-function savePrices() {
-
-  document.querySelectorAll("#priceEditor input").forEach(input => {
-
-    const size = input.dataset.size;
-    const color = input.dataset.color;
-    prices[size][color] = parseInt(input.value) || 0;
-  });
-
-  localStorage.setItem("profilePrices", JSON.stringify(prices));
-
-  alert("단가가 저장되었습니다.");
-
-  closeAdmin();
-  calculateAllLines();
-}
-
-function resetPrices() {
-
-  if (confirm("기본 단가로 복원하시겠습니까?")) {
-
-    prices = JSON.parse(JSON.stringify(defaultPrices));
-    localStorage.setItem("profilePrices", JSON.stringify(prices));
-
-    alert("기본 단가로 복원되었습니다.");
-
-    closeAdmin();
-    calculateAllLines();
-  }
-}
+calculate();
 
 </script>
 </body>
