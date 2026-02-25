@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프로파일커머스 자동견적</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{font-family:Arial;background:#f4f6fa;margin:0;padding:20px;}
+.container{max-width:1000px;margin:auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.08);}
+h2{margin-top:30px;}
+.size-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
+.size-btn{padding:10px;border:none;border-radius:8px;background:#e8ecf4;cursor:pointer;}
+.size-btn.active{background:#2c3e70;color:#fff;}
+input,select{padding:8px;margin:5px 0;border-radius:6px;border:1px solid #ccc;width:100%;box-sizing:border-box;}
+button{padding:10px 15px;border:none;border-radius:6px;background:#2c3e70;color:#fff;cursor:pointer;}
+.cart table{width:100%;border-collapse:collapse;margin-top:15px;}
+.cart th,.cart td{border:1px solid #ddd;padding:6px;text-align:center;font-size:14px;}
+.cart th{background:#f0f2f7;}
+.total{text-align:right;font-weight:bold;margin-top:10px;font-size:18px;}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h2>1. 규격 선택</h2>
+<div class="size-grid" id="sizeGrid"></div>
+
+<h2>2. 길이 및 수량</h2>
+<select id="color">
+<option value="silver">실버</option>
+<option value="black">블랙</option>
+</select>
+<input type="number" id="length" placeholder="길이(mm)" min="50">
+<input type="number" id="qty" placeholder="수량" min="1">
+<div id="price">0 원</div>
+
+<h2>3. 가공 옵션</h2>
+탭 <input type="number" id="tapQty" value="0" min="0">
+홀 <input type="number" id="holeQty" value="0" min="0">
+카운터 <input type="number" id="counterQty" value="0" min="0">
+<br><br>
+<button onclick="addToCart()">제품담기</button>
+
+<div class="cart">
+<h2>장바구니</h2>
+<table>
+<thead>
+<tr>
+<th>규격</th><th>색상</th><th>길이</th><th>수량</th>
+<th>가공</th><th>금액</th><th>삭제</th>
+</tr>
+</thead>
+<tbody id="cartBody"></tbody>
+</table>
+<div class="total">총 합계: <span id="grandTotal">0</span> 원</div>
+</div>
+
+<h2>4. 고객 정보</h2>
+<input type="text" id="custName" placeholder="고객명">
+<input type="text" id="custPhone" placeholder="연락처">
+<input type="email" id="custEmail" placeholder="이메일">
+<br><br>
+<button onclick="submitQuote()">견적 요청</button>
+
+</div>
+
+<script>
+
+/* ==============================
+   Supabase 연결 (중복 선언 없음)
+================================ */
+
+const supabase = window.supabase.createClient(
+  "https://ritzqnjgivmrtysulzil.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpdHpxbmpnaXZtcnR5c3VsemlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5ODA2MjMsImV4cCI6MjA4NzU1NjYyM30.oTeXacJlkMXKw1G4IRWUa3G2DM1wPvFl-9rzf5IdsxY"
+);
+
+/* ==============================
+   단가표
+================================ */
+
+const prices = {
+  2020:{silver:3900,black:6000},
+  2040:{silver:6900,black:9000},
+  3030:{silver:8900,black:11000},
+  3060:{silver:14000,black:18000},
+  4040:{silver:16000,black:19000},
+  4080:{silver:28000,black:30000}
+};
+
+let selectedSize = "2020";
+
+/* ==============================
+   규격 버튼 생성
+================================ */
+
+function createSizeButtons(){
+  const grid = document.getElementById("sizeGrid");
+  grid.innerHTML = "";
+
+  Object.keys(prices).forEach(size=>{
+    const btn = document.createElement("button");
+    btn.textContent = size;
+    btn.className = "size-btn";
+    btn.onclick = function(){
+      document.querySelectorAll(".size-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedSize = size;
+      updatePrice();
+    };
+    grid.appendChild(btn);
+  });
+
+  const first = document.querySelector(".size-btn");
+  if(first){ first.classList.add("active"); }
+}
+
+/* ==============================
+   가격 계산
+================================ */
+
+function calculateLine(size,color,length,qty,tap,hole,counter){
+
+  if(length < 50) length = 50;
+
+  const unit100 = Math.ceil(length/100);
+  const base100 = prices[size][color] / 10;
+
+  let total = unit100 * base100 * qty;
+  total += 300 * tap;
+  total += 400 * hole;
+  total += 1000 * counter;
+
+  return {
+    total: total,
+    calculatedLength: unit100 * 100
+  };
+}
+
+function updatePrice(){
+
+  const color = document.getElementById("color").value;
+  const length = parseInt(document.getElementById("length").value) || 0;
+  const qty = parseInt(document.getElementById("qty").value) || 0;
+  const tap = parseInt(document.getElementById("tapQty").value) || 0;
+  const hole = parseInt(document.getElementById("holeQty").value) || 0;
+  const counter = parseInt(document.getElementById("counterQty").value) || 0;
+
+  const result = calculateLine(selectedSize,color,length,qty,tap,hole,counter);
+
+  document.getElementById("price").textContent =
+    result.total.toLocaleString() + " 원";
+}
+
+document.addEventListener("input",updatePrice);
+
+/* ==============================
+   장바구니
+================================ */
+
+function addToCart(){
+
+  const color = document.getElementById("color").value;
+  const length = parseInt(document.getElementById("length").value) || 0;
+  const qty = parseInt(document.getElementById("qty").value) || 0;
+  const tap = parseInt(document.getElementById("tapQty").value) || 0;
+  const hole = parseInt(document.getElementById("holeQty").value) || 0;
+  const counter = parseInt(document.getElementById("counterQty").value) || 0;
+
+  const result = calculateLine(selectedSize,color,length,qty,tap,hole,counter);
+
+  const row = document.createElement("tr");
+
+  row.innerHTML = `
+    <td>${selectedSize}</td>
+    <td>${color}</td>
+    <td>${result.calculatedLength}</td>
+    <td>${qty}</td>
+    <td>탭:${tap} 홀:${hole} 카운터:${counter}</td>
+    <td class="linePrice">${result.total.toLocaleString()}</td>
+    <td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
+  `;
+
+  document.getElementById("cartBody").appendChild(row);
+  updateGrand();
+}
+
+function updateGrand(){
+  let sum = 0;
+  document.querySelectorAll(".linePrice").forEach(cell=>{
+    sum += parseInt(cell.textContent.replace(/,/g,'')) || 0;
+  });
+  document.getElementById("grandTotal").textContent = sum.toLocaleString();
+}
+
+/* ==============================
+   제출
+================================ */
+
+async function submitQuote(){
+
+  const name = document.getElementById("custName").value;
+  const phone = document.getElementById("custPhone").value;
+  const email = document.getElementById("custEmail").value;
+
+  if(!name || !phone || !email){
+    alert("고객 정보를 입력하세요");
+    return;
+  }
+
+  const total = parseInt(
+    document.getElementById("grandTotal").textContent.replace(/,/g,'')
+  ) || 0;
+
+  const orderNo = "BD-" + Date.now();
+
+  const { error } = await supabase.from("quotes").insert([{
+    order_no: orderNo,
+    name: name,
+    phone: phone,
+    email: email,
+    total: total,
+    status: "접수"
+  }]);
+
+  if(error){
+    alert("DB 저장 실패");
+    console.log(error);
+    return;
+  }
+
+  await fetch("/api/send-email",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name,phone,email,total,orderNo})
+  });
+
+  alert("접수 완료! 주문번호: " + orderNo);
+}
+
+window.onload = function(){
+  createSizeButtons();
+  updatePrice();
+};
+
+</script>
+
+</body>
+</html>
+
