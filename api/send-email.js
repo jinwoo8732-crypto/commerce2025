@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     const { name, phone, email, items, total, orderNo } = req.body;
 
     await transporter.sendMail({
-      from: `"견적 시스템" <${process.env.SMTP_USER}>`,
+      from: `"프로파일커머스자동견적" <${process.env.SMTP_USER}>`,
       to: process.env.SMTP_USER,
       subject: `견적 요청 - ${orderNo}`,
       html: `
