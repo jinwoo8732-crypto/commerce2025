@@ -1,41 +1,40 @@
 import nodemailer from "nodemailer";
 
 export default async function handler(req, res) {
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
-  const { orderNo, name, phone, total } = req.body;
-
   try {
 
     const transporter = nodemailer.createTransport({
-      host: "smtp.naver.com",
+      host: "smtp.gmail.com",
       port: 465,
       secure: true,
       auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
+        pass: process.env.SMTP_PASS,
+      },
     });
 
+    const { name, phone, email, items, total, orderNo } = req.body;
+
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: `"견적 시스템" <${process.env.SMTP_USER}>`,
       to: process.env.SMTP_USER,
-      subject: `새 견적 접수 - ${orderNo}`,
-      text: `
-주문번호: ${orderNo}
-고객명: ${name}
-연락처: ${phone}
-총금액: ${Number(total).toLocaleString()}원
+      subject: `견적 요청 - ${orderNo}`,
+      html: `
+        <h2>새 견적 요청</h2>
+        <p>이름: ${name}</p>
+        <p>연락처: ${phone}</p>
+        <p>이메일: ${email}</p>
+        <p>총 금액: ${total}원</p>
+        <p>주문번호: ${orderNo}</p>
+        <p>상품:</p>
+        <pre>${items}</pre>
       `
     });
 
-    return res.status(200).json({ success: true });
+    res.status(200).json({ success: true });
 
   } catch (error) {
-    console.error("메일 발송 실패:", error);
-    return res.status(500).json({ error: "메일 발송 실패" });
+    console.log(error);
+    res.status(500).json({ error: error.message });
   }
 }
