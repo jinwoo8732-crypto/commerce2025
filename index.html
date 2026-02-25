@@ -3,24 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>프로파일 자동견적</title>
+<title>프로파일커머스 자동견적</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{font-family:Arial;background:#f2f4f8;margin:0;padding:40px;}
-.container{max-width:1100px;margin:auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 5px 20px rgba(0,0,0,0.1);}
+body{
+  font-family: Arial;
+  background:#f4f6fa;
+  margin:0;
+  padding:20px;
+}
+.container{
+  max-width:1000px;
+  margin:auto;
+  background:#fff;
+  padding:25px;
+  border-radius:12px;
+  box-shadow:0 5px 20px rgba(0,0,0,0.08);
+}
 h2{margin-top:30px;}
-.size-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.size-btn{padding:10px;border:none;border-radius:6px;background:#e9ecf2;cursor:pointer;}
-.size-btn.active{background:#2c3e70;color:#fff;}
-input,select{padding:6px;margin:5px 0;border-radius:6px;border:1px solid #ccc;}
-button{padding:8px 12px;border:none;border-radius:6px;background:#2c3e70;color:#fff;cursor:pointer;margin-right:5px;}
-.cart table{width:100%;border-collapse:collapse;margin-top:20px;}
-.cart th,.cart td{border:1px solid #ddd;padding:6px;text-align:center;}
-.cart th{background:#f0f0f0;}
-.total{text-align:right;font-weight:bold;margin-top:10px;}
-.success{color:green;font-weight:bold;margin-top:10px;}
+
+.size-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:10px;
+}
+.size-btn{
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:#e8ecf4;
+  cursor:pointer;
+}
+.size-btn.active{
+  background:#2c3e70;
+  color:#fff;
+}
+
+input,select{
+  padding:8px;
+  margin:5px 0;
+  border-radius:6px;
+  border:1px solid #ccc;
+  width:100%;
+  box-sizing:border-box;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:6px;
+  background:#2c3e70;
+  color:#fff;
+  cursor:pointer;
+}
+
+.cart table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:15px;
+}
+.cart th,.cart td{
+  border:1px solid #ddd;
+  padding:6px;
+  text-align:center;
+  font-size:14px;
+}
+.cart th{background:#f0f2f7;}
+
+.total{
+  text-align:right;
+  font-weight:bold;
+  margin-top:10px;
+  font-size:18px;
+}
+
+.success{
+  color:green;
+  font-weight:bold;
+  margin-top:15px;
+}
+
+@media(max-width:600px){
+  .cart table{font-size:12px;}
+}
 </style>
 </head>
 
@@ -28,44 +95,53 @@ button{padding:8px 12px;border:none;border-radius:6px;background:#2c3e70;color:#
 
 <div class="container">
 
-<h2>1. 규격 선택</h2>
+<h2>1️⃣ 규격 선택</h2>
 <div class="size-grid" id="sizeGrid"></div>
 
-<h2>2. 길이 및 수량</h2>
+<h2>2️⃣ 길이 및 수량</h2>
 <select id="color">
 <option value="silver">실버</option>
 <option value="black">블랙</option>
 </select>
+
 <input type="number" id="length" placeholder="길이(mm)" min="50">
 <input type="number" id="qty" placeholder="수량" min="1">
+
 <div id="price">0 원</div>
 
-<h2>3. 가공 옵션</h2>
-탭 <input type="number" id="tapQty" value="0" min="0" style="width:60px;">
-홀 <input type="number" id="holeQty" value="0" min="0" style="width:60px;">
-카운터 <input type="number" id="counterQty" value="0" min="0" style="width:60px;">
+<h2>3️⃣ 가공 옵션</h2>
+탭 <input type="number" id="tapQty" value="0" min="0">
+홀 <input type="number" id="holeQty" value="0" min="0">
+카운터 <input type="number" id="counterQty" value="0" min="0">
+
 <br><br>
 <button onclick="addToCart()">제품담기</button>
 
 <div class="cart">
-<h2>장바구니</h2>
+<h2>🛒 장바구니</h2>
 <table>
 <thead>
 <tr>
-<th>규격</th><th>색상</th><th>길이</th><th>수량</th>
-<th>탭</th><th>홀</th><th>카운터</th>
-<th>금액</th><th>삭제</th>
+<th>규격</th>
+<th>색상</th>
+<th>길이</th>
+<th>수량</th>
+<th>가공</th>
+<th>금액</th>
+<th>삭제</th>
 </tr>
 </thead>
 <tbody id="cartBody"></tbody>
 </table>
+
 <div class="total">총 합계: <span id="grandTotal">0</span> 원</div>
 </div>
 
-<h2>4. 고객 정보</h2>
+<h2>4️⃣ 고객 정보</h2>
 <input type="text" id="custName" placeholder="고객명">
 <input type="text" id="custPhone" placeholder="연락처">
 <input type="email" id="custEmail" placeholder="이메일">
+
 <br><br>
 <button onclick="submitQuote()">견적 요청</button>
 
@@ -75,11 +151,13 @@ button{padding:8px 12px;border:none;border-radius:6px;background:#2c3e70;color:#
 
 <script>
 
-const supabaseClient = window.supabase.createClient(
-  "https://uujjbrytvrkhctfpknol.supabase.co",
-  "여기에_본인_anon_key"
+// 🔐 Supabase 연결
+const supabase = window.supabase.createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_ANON_KEY"
 );
 
+// 단가표
 const prices={
 2020:{silver:3900,black:6000},
 2040:{silver:6900,black:9000},
@@ -91,6 +169,7 @@ const prices={
 
 let selectedSize="2020";
 
+// 규격 버튼 생성
 function createSizeButtons(){
 const grid=document.getElementById("sizeGrid");
 Object.keys(prices).forEach(size=>{
@@ -108,6 +187,7 @@ grid.appendChild(btn);
 document.querySelector(".size-btn").classList.add("active");
 }
 
+// 계산 함수
 function calculateLine(size,color,length,qty,tap,hole,counter){
 if(length<50) length=50;
 let unit100=Math.ceil(length/100);
@@ -133,6 +213,7 @@ document.getElementById("price").textContent=result.total.toLocaleString()+" 원
 
 document.addEventListener("input",updatePrice);
 
+// 장바구니 추가
 function addToCart(){
 let colorValue=document.getElementById("color").value;
 let length=parseInt(document.getElementById("length").value)||0;
@@ -150,9 +231,7 @@ row.innerHTML=`
 <td>${colorValue}</td>
 <td>${result.calculatedLength}</td>
 <td>${qty}</td>
-<td>${tap}</td>
-<td>${hole}</td>
-<td>${counter}</td>
+<td>탭:${tap} 홀:${hole} 카운터:${counter}</td>
 <td class="linePrice">${result.total.toLocaleString()}</td>
 <td><button onclick="this.closest('tr').remove();updateGrand();">X</button></td>
 `;
@@ -169,34 +248,50 @@ g+=parseInt(cell.textContent.replace(/,/g,''))||0;
 document.getElementById("grandTotal").textContent=g.toLocaleString();
 }
 
-async function sendEmail(orderNo, name, phone, total) {
-  await fetch("/api/send-email", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ orderNo, name, phone, total })
-  });
-}
-
+// 제출
 async function submitQuote(){
+
 let name=document.getElementById("custName").value;
 let phone=document.getElementById("custPhone").value;
 let email=document.getElementById("custEmail").value;
+
+if(!name||!phone||!email){alert("정보 입력하세요");return;}
+
+let items="";
+document.querySelectorAll("#cartBody tr").forEach(row=>{
+items+=row.innerText+"\n";
+});
+
 let total=parseInt(document.getElementById("grandTotal").textContent.replace(/,/g,''))||0;
-
-if(!name||!phone){alert("고객명/연락처 입력");return;}
-
 let orderNo="BD-"+Date.now();
 
-await supabaseClient.from("quotes").insert([{
+// Supabase 저장
+await supabase.from("quotes").insert([{
 order_no:orderNo,name,phone,email,total,status:"접수"
 }]);
 
-await sendEmail(orderNo, name, phone, total);
+// 관리자 메일
+await fetch("/api/send-email",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({name,phone,email,items,total,orderNo})
+});
 
-document.getElementById("resultMsg").innerText="접수 완료! 주문번호: "+orderNo;
+// 고객 자동 회신
+await fetch("/api/customer",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({name,email,items,total,orderNo})
+});
+
+document.getElementById("resultMsg").innerText="✅ 접수 완료! 주문번호: "+orderNo;
+
 }
 
-window.onload=function(){createSizeButtons();updatePrice();}
+window.onload=function(){
+createSizeButtons();
+updatePrice();
+}
 
 </script>
 </body>
