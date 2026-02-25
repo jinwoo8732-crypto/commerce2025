@@ -153,9 +153,11 @@ button{
 
 // 🔐 Supabase 연결
 const supabase = window.supabase.createClient(
-  "https://gweeuszghkqmsjeiwjxo.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3ZWV1c3pnaGtxbXNqZWl3anhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTYwODcsImV4cCI6MjA4NzQ5MjA4N30.yF2q-gCwfH3yjRpCAdbWNKHH-_7WT1ga7j6MBCvIQ68");
+const SUPABASE_URL = "https://gweeuszghkqmsjeiwjxo.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3ZWV1c3pnaGtxbXNqZWl3anhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5MTYwODcsImV4cCI6MjA4NzQ5MjA4N30.yF2q-gCwfH3yjRpCAdbWNKHH-_7WT1ga7j6MBCvIQ68";
 
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  
 // 단가표
 const prices={
 2020:{silver:3900,black:6000},
@@ -295,6 +297,7 @@ updatePrice();
 </script>
 </body>
 </html>
+
 
 
 
